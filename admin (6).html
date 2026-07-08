@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindReader — Admin</title>
+<style>
+  :root{--bg:#0b0b0b;--panel:#161616;--line:#2a2a2a;--accent:#3ea6ff;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:#eee;font-family:"Segoe UI",Roboto,Arial,sans-serif;
+    padding:24px;max-width:680px;margin:0 auto;}
+  h1{font-size:22px;margin-bottom:4px;}
+  .sub{color:#888;font-size:13px;margin-bottom:20px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:18px;}
+  label{display:block;font-size:13px;color:#aaa;margin-bottom:6px;}
+  input[type=text],textarea,select{width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;
+    color:#eee;padding:10px 12px;font-size:14px;margin-bottom:14px;}
+  textarea{resize:vertical;min-height:60px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  button{cursor:pointer;font-family:inherit;border:none;border-radius:8px;padding:10px 18px;
+    font-size:14px;font-weight:600;}
+  .primary{background:var(--accent);color:#000;}
+  .ghost{background:#222;color:#eee;}
+  .yes{background:#2e7d32;color:#fff;}
+  .no{background:#b71c1c;color:#fff;}
+  .status-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#555;margin-right:6px;}
+  .status-dot.on{background:#4caf50;}
+  #link-box{display:flex;gap:8px;align-items:center;}
+  #share-link{font-size:13px;color:#9ecbff;word-break:break-all;flex:1;}
+  small.hint{color:#666;display:block;margin-top:6px;}
+  #player-question-preview{font-size:13px;color:#ccc;background:#0d0d0d;border:1px solid #222;
+    border-radius:8px;padding:10px;margin-bottom:14px;min-height:20px;}
+  #player-answer-preview{font-size:14px;font-weight:600;color:#fff;}
+
+  /* ---- Tabs ---- */
+  #tab-nav{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+  .tab-btn{background:#161616;color:#999;border:1px solid var(--line);border-radius:8px;
+    padding:9px 16px;font-size:13px;font-weight:600;}
+  .tab-btn.active{background:var(--accent);color:#000;border-color:var(--accent);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+</style>
+</head>
+<body>
+<h1>MindReader — Admin</h1>
+<div class="sub">You control what your friend sees. They never know it's you typing.</div>
+
+<div id="tab-nav">
+  <button class="tab-btn active" data-tab="connect">Connect</button>
+  <button class="tab-btn" data-tab="ask">Ask</button>
+  <button class="tab-btn" data-tab="games">Games</button>
+  <button class="tab-btn" data-tab="history">History</button>
+</div>
+
+<!-- ============ CONNECT TAB ============ -->
+<div class="tab-panel active" id="tab-connect">
+  <div class="card">
+    <label>Your room code — give this to your friend</label>
+    <div id="link-box">
+      <span id="share-link" style="font-size:32px;font-weight:700;letter-spacing:3px;color:#fff;">------</span>
+      <button class="ghost" id="copy-link">Copy code</button>
+    </div>
+    <small class="hint">Send them the <code>player.html</code> file itself (Discord, text, USB, whatever) —
+    they open it, tick the agreement, type in this code, and you're connected. If their tab crashes or
+    reloads, the same code reconnects them right where things were.</small>
+    <div style="margin-top:10px;">
+      <span class="status-dot" id="conn-dot"></span>
+      <span id="conn-text">Waiting for friend to connect…</span>
+    </div>
+    <div style="margin-top:6px;">
+      <span class="status-dot" id="fb-dot"></span>
+      <span id="fb-text" style="font-size:12px;color:#888;">Checking Firebase connection…</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Their camera / mic (only if they allow it)</label>
+    <video id="their-cam" autoplay playsinline muted style="width:100%;max-width:320px;border-radius:8px;
+      background:#000;display:none;"></video>
+    <div id="cam-status" style="font-size:13px;color:#777;margin:8px 0;">No feed yet.</div>
+    <div class="row">
+      <button class="ghost" id="toggle-cam">Hide video</button>
+      <button class="ghost" id="toggle-mic">Mute audio</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ASK TAB ============ -->
+<div class="tab-panel" id="tab-ask">
+  <div class="card">
+    <label>Question to show them</label>
+    <textarea id="question-input" placeholder="Do you watch Bundun?"></textarea>
+    <div class="row" style="margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="qmode" value="yesno" checked> Yes / No
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="qmode" value="multi"> Multiple choice
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="qmode" value="open"> They type an answer
+      </label>
+    </div>
+    <div id="yesno-labels-row" class="row" style="margin-bottom:14px;">
+      <div style="flex:1;">
+        <label style="font-size:12px;">"Yes" button says:</label>
+        <input type="text" id="yes-label" placeholder="Yes" value="Yes">
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:12px;">"No" button says:</label>
+        <input type="text" id="no-label" placeholder="No" value="No">
+      </div>
+    </div>
+    <div id="multi-options-row" style="display:none;margin-bottom:14px;">
+      <label style="font-size:12px;">Options (comma-separated, 2-6)</label>
+      <input type="text" id="multi-options-input" placeholder="Option A, Option B, Option C">
+    </div>
+    <button class="primary" id="send-question">Send question</button>
+  </div>
+
+  <div class="card">
+    <label>Their answer (live)</label>
+    <div id="player-question-preview">—</div>
+    <div id="player-answer-preview">Waiting…</div>
+  </div>
+
+  <div class="card">
+    <label>Your reveal (what they'll actually see)</label>
+    <div class="row" style="margin-bottom:10px;">
+      <button class="yes" id="reveal-yes">Reveal: Yes</button>
+      <button class="no" id="reveal-no">Reveal: No</button>
+    </div>
+    <input type="text" id="custom-answer" placeholder="Custom answer text…">
+    <div class="row" style="margin-bottom:14px;">
+      <button class="primary" id="reveal-custom">Reveal custom</button>
+      <button class="ghost" id="reveal-correct">Reveal + play "correct" ding</button>
+      <button class="ghost" id="reveal-wrong">Reveal + play "wrong" buzz</button>
+    </div>
+    <button class="ghost" id="trigger-analyzing">Show "Analyzing..." only</button>
+    <button class="ghost" id="reset-question">Back to question screen</button>
+  </div>
+</div>
+
+<!-- ============ GAMES TAB ============ -->
+<div class="tab-panel" id="tab-games">
+  <div class="card">
+    <label>Choose a game</label>
+    <div class="row" style="margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="gametype" value="none" checked> None
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="gametype" value="tictactoe"> Tic-Tac-Toe
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="gametype" value="snake"> Snake
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="gametype" value="rps"> Rock Paper Scissors
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="gametype" value="reaction"> Reaction Test
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="gametype" value="whackamole"> Whack-a-Mole
+      </label>
+    </div>
+
+    <!-- TIC TAC TOE -->
+    <div id="ttt-config" style="display:none;">
+      <div class="row" style="margin-bottom:14px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;">Grid size</label>
+          <select id="ttt-size">
+            <option value="3">3 x 3</option>
+            <option value="4">4 x 4</option>
+            <option value="5">5 x 5</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Their symbol</label>
+          <input type="text" id="ttt-player-symbol" value="X" maxlength="1">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Your symbol</label>
+          <input type="text" id="ttt-admin-symbol" value="O" maxlength="1">
+        </div>
+      </div>
+      <button class="primary" id="ttt-start">Start Tic-Tac-Toe</button>
+      <button class="ghost" id="ttt-reset">Reset board</button>
+      <div style="margin-top:16px;">
+        <label>Live board (click any cell to rig it)</label>
+        <div id="ttt-admin-grid" style="display:grid;gap:6px;margin-bottom:10px;"></div>
+        <div class="row">
+          <button class="yes" id="ttt-force-player-win">Force: they win</button>
+          <button class="no" id="ttt-force-admin-win">Force: you win</button>
+          <button class="ghost" id="ttt-force-draw">Force: draw</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNAKE -->
+    <div id="snake-config" style="display:none;">
+      <div class="row" style="margin-bottom:14px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;">Board size (cells)</label>
+          <input type="text" id="snake-size" value="15">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Apple count</label>
+          <input type="text" id="snake-apples" value="3">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Speed (ms per move)</label>
+          <input type="text" id="snake-speed" value="150">
+        </div>
+      </div>
+      <button class="primary" id="snake-start">Start Snake</button>
+      <button class="ghost" id="snake-reset">Reset game</button>
+      <div style="margin-top:16px;">
+        <label>Live view</label>
+        <canvas id="snake-admin-canvas" width="240" height="240" style="background:#0a0a0a;
+          border:1px solid #333;border-radius:8px;margin-bottom:10px;"></canvas>
+        <div id="snake-admin-score" style="font-size:13px;color:#ccc;margin-bottom:10px;">Score: 0</div>
+        <div class="row" style="margin-bottom:10px;">
+          <button class="ghost" id="snake-add-apple">+ Add apple</button>
+          <button class="ghost" id="snake-remove-apples">Clear apples</button>
+          <button class="ghost" id="snake-grow">Grow +3</button>
+          <button class="ghost" id="snake-shrink">Shrink -3</button>
+        </div>
+        <div class="row" style="margin-bottom:10px;">
+          <input type="text" id="snake-new-speed" placeholder="New speed (ms)" style="flex:1;margin-bottom:0;">
+          <button class="ghost" id="snake-set-speed">Set speed</button>
+        </div>
+        <button class="no" id="snake-force-gameover">Force game over</button>
+      </div>
+    </div>
+
+    <!-- RPS -->
+    <div id="rps-config" style="display:none;">
+      <button class="primary" id="rps-start">Start Rock Paper Scissors</button>
+      <button class="ghost" id="rps-reset-scores">Reset scores</button>
+      <div style="margin-top:16px;">
+        <label>Their current move</label>
+        <div id="rps-player-choice" style="font-size:16px;color:#fff;margin-bottom:10px;">Waiting...</div>
+        <label>Your move (pick after seeing theirs, or force below)</label>
+        <div class="row" style="margin-bottom:14px;">
+          <button class="ghost rps-admin-choice" data-choice="rock">🪨 Rock</button>
+          <button class="ghost rps-admin-choice" data-choice="paper">📄 Paper</button>
+          <button class="ghost rps-admin-choice" data-choice="scissors">✂️ Scissors</button>
+        </div>
+        <label>Or just force the outcome:</label>
+        <div class="row">
+          <button class="yes" id="rps-force-player-win">Force: they win</button>
+          <button class="no" id="rps-force-admin-win">Force: you win</button>
+          <button class="ghost" id="rps-force-tie">Force: tie</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REACTION TEST -->
+    <div id="reaction-config" style="display:none;">
+      <div class="row" style="margin-bottom:14px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;">Min delay before flash (ms)</label>
+          <input type="text" id="reaction-min-delay" value="1500">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Max delay before flash (ms)</label>
+          <input type="text" id="reaction-max-delay" value="4000">
+        </div>
+      </div>
+      <button class="primary" id="reaction-start">Start Reaction Test</button>
+      <button class="ghost" id="reaction-new-round">New round (same config)</button>
+      <div style="margin-top:16px;">
+        <label>Their actual result</label>
+        <div id="reaction-actual-result" style="font-size:16px;color:#fff;margin-bottom:10px;">Waiting...</div>
+        <label>Report a different result to them instead (rig it)</label>
+        <div class="row">
+          <input type="text" id="reaction-forced-ms" placeholder="e.g. 180" style="flex:1;margin-bottom:0;">
+          <button class="ghost" id="reaction-force">Send fake result</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHACK A MOLE -->
+    <div id="whackamole-config" style="display:none;">
+      <div class="row" style="margin-bottom:14px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;">Grid size (n x n)</label>
+          <input type="text" id="wam-grid-size" value="3">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Mole spawn rate (ms)</label>
+          <input type="text" id="wam-spawn-rate" value="900">
+        </div>
+      </div>
+      <button class="primary" id="wam-start">Start Whack-a-Mole</button>
+      <button class="ghost" id="wam-reset">Reset game</button>
+      <div style="margin-top:16px;">
+        <label>Their live score</label>
+        <div id="wam-live-score" style="font-size:16px;color:#fff;margin-bottom:10px;">Score: 0</div>
+        <div class="row" style="margin-bottom:10px;">
+          <input type="text" id="wam-new-rate" placeholder="New spawn rate (ms)" style="flex:1;margin-bottom:0;">
+          <button class="ghost" id="wam-set-rate">Set live speed</button>
+        </div>
+        <button class="no" id="wam-force-gameover">Force game over</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HISTORY TAB ============ -->
+<div class="tab-panel" id="tab-history">
+  <div class="card">
+    <label>Session history</label>
+    <div id="history-log" style="font-size:13px;color:#ccc;max-height:400px;overflow-y:auto;">
+      <em style="color:#666;">Nothing yet this session.</em>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+// ====== PASTE YOUR FIREBASE CONFIG HERE (same as player.html) ======
+const firebaseConfig = {
+  apiKey: "AIzaSyDyAKTWeowIA-Ohrcb-MIKHaVLwIq9Hh5A",
+  authDomain: "to-tell-my-wife-i-love-her.firebaseapp.com",
+  databaseURL: "https://to-tell-my-wife-i-love-her-default-rtdb.firebaseio.com",
+  projectId: "to-tell-my-wife-i-love-her",
+  storageBucket: "to-tell-my-wife-i-love-her.firebasestorage.app",
+  messagingSenderId: "717886106980",
+  appId: "1:717886106980:web:9b139d30aafd25f709de71"
+};
+// =====================================================================
+
+let db = null;
+try{
+  if(firebaseConfig.databaseURL === "PASTE_YOUR_DATABASE_URL_HERE" || !firebaseConfig.databaseURL.startsWith("http")){
+    throw new Error("databaseURL not filled in yet");
+  }
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+}catch(e){
+  console.error("Firebase init failed:", e);
+  const warn = document.createElement("div");
+  warn.style.cssText = "background:#5c1a1a;color:#fff;padding:10px 16px;border-radius:8px;" +
+    "font-size:13px;margin-bottom:16px;";
+  warn.textContent = "Setup error: databaseURL is missing/invalid in admin.html — get it from " +
+    "Firebase console > Realtime Database > Data tab, and paste it in.";
+  document.body.insertBefore(warn, document.body.firstChild);
+}
+
+// ---- Tabs ----
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+// ---- Reconnect-friendly room code: reuse from URL if present, else generate new ----
+function makeRoomCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for(let i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+let roomId = new URLSearchParams(location.search).get("room") || makeRoomCode();
+history.replaceState(null, "", "?room=" + roomId);
+document.getElementById("share-link").textContent = roomId;
+
+document.getElementById("copy-link").addEventListener("click", () => {
+  navigator.clipboard.writeText(roomId);
+  document.getElementById("copy-link").textContent = "Copied!";
+  setTimeout(()=> document.getElementById("copy-link").textContent = "Copy code", 1500);
+});
+
+const roomRef = db ? db.ref("rooms/" + roomId) : null;
+// NOTE: does not wipe existing state — reopening admin.html with the same room code
+// (via the URL's ?room=... it just set) resumes the same session instead of resetting it.
+if(roomRef){
+  roomRef.once("value", (snap) => {
+    if(!snap.exists()){
+      roomRef.set({ status: "idle", question: "", answer: "", playerConnected: false });
+    }
+  }).catch(err => showFbError("Can't read database: " + err.message));
+}
+
+function showFbError(msg){
+  document.getElementById("fb-dot").classList.remove("on");
+  document.getElementById("fb-dot").style.background = "#e53935";
+  document.getElementById("fb-text").textContent = "Firebase error: " + msg;
+  document.getElementById("fb-text").style.color = "#ff8a80";
+}
+if(db){
+  db.ref(".info/connected").on("value", (snap) => {
+    const connected = snap.val() === true;
+    document.getElementById("fb-dot").classList.toggle("on", connected);
+    document.getElementById("fb-dot").style.background = connected ? "" : "#e53935";
+    document.getElementById("fb-text").textContent = connected
+      ? "Firebase: connected" : "Firebase: disconnected — check your internet or database rules";
+    document.getElementById("fb-text").style.color = connected ? "#888" : "#ff8a80";
+  }, (err) => showFbError(err.message));
+}else{
+  showFbError("config missing/invalid — see banner above");
+}
+
+// ----- Receive their camera feed -----
+if(roomRef){
+  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+  pc.ontrack = (e) => {
+    const vid = document.getElementById("their-cam");
+    vid.srcObject = e.streams[0];
+    vid.style.display = "block";
+    document.getElementById("cam-status").textContent = "Live";
+  };
+  pc.onicecandidate = (e) => { if(e.candidate) roomRef.child("webrtc/adminCandidates").push(e.candidate.toJSON()); };
+  roomRef.child("webrtc/offer").on("value", async (snap) => {
+    if(snap.exists() && !pc.currentRemoteDescription){
+      await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(snap.val())));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      roomRef.child("webrtc/answer").set(JSON.stringify(answer));
+      document.getElementById("cam-status").textContent = "Connecting…";
+    }
+  });
+  roomRef.child("webrtc/playerCandidates").on("child_added", (snap) => {
+    pc.addIceCandidate(new RTCIceCandidate(snap.val())).catch(()=>{});
+  });
+}
+
+const historyLog = document.getElementById("history-log");
+let historyEntries = [];
+function addHistory(line){
+  historyEntries.push(line);
+  historyLog.innerHTML = historyEntries.map(l => `<div style="margin-bottom:6px;">${l}</div>`).join("");
+  historyLog.scrollTop = historyLog.scrollHeight;
+}
+
+let lastLoggedAnswer = null;
+if(roomRef) roomRef.on("value", (snap) => {
+  const data = snap.val();
+  if(!data) return;
+  document.getElementById("conn-dot").classList.toggle("on", !!data.playerConnected);
+  document.getElementById("conn-text").textContent = data.playerConnected
+    ? "Friend is connected" : "Waiting for friend to connect…";
+  document.getElementById("player-question-preview").textContent = data.question
+    ? `"${data.question}"` : "—";
+  document.getElementById("player-answer-preview").textContent = data.playerAnswer
+    ? `They answered: ${data.playerAnswer}` : "Waiting…";
+
+  if(data.playerAnswer && data.playerAnswer !== lastLoggedAnswer){
+    lastLoggedAnswer = data.playerAnswer;
+    addHistory(`<span style="color:#8ab4f8;">Them:</span> "${data.question}" → <strong>${data.playerAnswer}</strong>`);
+  }
+}, (err) => showFbError("Can't read room data: " + err.message));
+
+// ============ ASK QUESTION ============
+document.querySelectorAll('input[name="qmode"]').forEach(el => {
+  el.addEventListener("change", () => {
+    const mode = document.querySelector('input[name="qmode"]:checked').value;
+    document.getElementById("yesno-labels-row").style.display = mode === "yesno" ? "flex" : "none";
+    document.getElementById("multi-options-row").style.display = mode === "multi" ? "block" : "none";
+  });
+});
+
+document.getElementById("send-question").addEventListener("click", () => {
+  if(!roomRef) return;
+  const q = document.getElementById("question-input").value.trim();
+  if(!q) return;
+  const mode = document.querySelector('input[name="qmode"]:checked').value;
+  const yesLabel = document.getElementById("yes-label").value.trim() || "Yes";
+  const noLabel = document.getElementById("no-label").value.trim() || "No";
+  const update = {
+    question: q, questionMode: mode, yesLabel, noLabel,
+    status: "asking", answer: "", playerAnswer: "", answerFeedback: null
+  };
+  let modeLabel = `${yesLabel} / ${noLabel}`;
+  if(mode === "multi"){
+    const opts = document.getElementById("multi-options-input").value.split(",").map(s=>s.trim()).filter(Boolean);
+    update.multiOptions = opts;
+    modeLabel = opts.join(" / ") || "no options set";
+  }
+  if(mode === "open") modeLabel = "open answer";
+  roomRef.update(update);
+  lastLoggedAnswer = null;
+  addHistory(`<span style="color:#aaa;">You asked:</span> "${q}" (${modeLabel})`);
+});
+
+document.getElementById("trigger-analyzing").addEventListener("click", () => {
+  if(roomRef) roomRef.update({ status: "analyzing" });
+});
+document.getElementById("reset-question").addEventListener("click", () => {
+  if(roomRef) roomRef.update({ status: "asking" });
+});
+
+function reveal(answer, feedback){
+  if(roomRef) roomRef.update({ answer, status: "answered", answerFeedback: feedback || null });
+  addHistory(`<span style="color:#4caf50;">You revealed:</span> <strong>${answer}</strong>`);
+}
+document.getElementById("reveal-yes").addEventListener("click", () => reveal(document.getElementById("yes-label").value.trim() || "Yes"));
+document.getElementById("reveal-no").addEventListener("click", () => reveal(document.getElementById("no-label").value.trim() || "No"));
+["yes-label","no-label"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    document.getElementById("reveal-yes").textContent = "Reveal: " + (document.getElementById("yes-label").value.trim() || "Yes");
+    document.getElementById("reveal-no").textContent = "Reveal: " + (document.getElementById("no-label").value.trim() || "No");
+  });
+});
+document.getElementById("reveal-custom").addEventListener("click", () => {
+  const val = document.getElementById("custom-answer").value.trim();
+  if(!val) return;
+  reveal(val);
+});
+document.getElementById("reveal-correct").addEventListener("click", () => {
+  const val = document.getElementById("custom-answer").value.trim() || "Correct!";
+  reveal(val, "correct");
+});
+document.getElementById("reveal-wrong").addEventListener("click", () => {
+  const val = document.getElementById("custom-answer").value.trim() || "Wrong!";
+  reveal(val, "wrong");
+});
+
+document.getElementById("toggle-cam").addEventListener("click", () => {
+  const vid = document.getElementById("their-cam");
+  const hidden = vid.style.display === "none";
+  vid.style.display = hidden ? "block" : "none";
+  document.getElementById("toggle-cam").textContent = hidden ? "Hide video" : "Show video";
+});
+document.getElementById("toggle-mic").addEventListener("click", () => {
+  const vid = document.getElementById("their-cam");
+  vid.muted = !vid.muted;
+  document.getElementById("toggle-mic").textContent = vid.muted ? "Unmute audio" : "Mute audio";
+  if(!vid.muted) vid.play().catch(()=>{});
+});
+
+// ============ GAMES ============
+document.querySelectorAll('input[name="gametype"]').forEach(el => {
+  el.addEventListener("change", () => {
+    const type = document.querySelector('input[name="gametype"]:checked').value;
+    document.getElementById("ttt-config").style.display = type === "tictactoe" ? "block" : "none";
+    document.getElementById("snake-config").style.display = type === "snake" ? "block" : "none";
+    document.getElementById("rps-config").style.display = type === "rps" ? "block" : "none";
+    document.getElementById("reaction-config").style.display = type === "reaction" ? "block" : "none";
+    document.getElementById("whackamole-config").style.display = type === "whackamole" ? "block" : "none";
+  });
+});
+
+// ---------- TIC TAC TOE ----------
+function tttStart(){
+  if(!roomRef) return;
+  const size = parseInt(document.getElementById("ttt-size").value);
+  const playerSymbol = document.getElementById("ttt-player-symbol").value.trim() || "X";
+  const adminSymbol = document.getElementById("ttt-admin-symbol").value.trim() || "O";
+  roomRef.child("game").set({
+    type: "tictactoe",
+    config: { size, playerSymbol, adminSymbol },
+    state: { board: Array(size*size).fill(""), turn: "player", winner: null }
+  });
+  roomRef.update({ status: "game" });
+  addHistory(`<span style="color:#aaa;">Started</span> Tic-Tac-Toe (${size}x${size})`);
+}
+document.getElementById("ttt-start").addEventListener("click", tttStart);
+document.getElementById("ttt-reset").addEventListener("click", () => {
+  if(!roomRef) return;
+  roomRef.child("game/config").once("value", snap => {
+    const cfg = snap.val() || { size: 3 };
+    roomRef.child("game/state").set({ board: Array(cfg.size*cfg.size).fill(""), turn: "player", winner: null });
+  });
+});
+let tttAdminSize = 3;
+function renderTTTAdminGrid(cfg, state){
+  const grid = document.getElementById("ttt-admin-grid");
+  const size = cfg.size || 3;
+  if(size !== tttAdminSize || grid.children.length !== size*size){
+    tttAdminSize = size;
+    grid.innerHTML = "";
+    grid.style.gridTemplateColumns = `repeat(${size}, 44px)`;
+    for(let i=0;i<size*size;i++){
+      const cell = document.createElement("div");
+      cell.style.cssText = "width:44px;height:44px;background:#0d0d0d;border:1px solid #333;" +
+        "border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;" +
+        "font-weight:700;color:#fff;cursor:pointer;";
+      cell.addEventListener("click", () => {
+        const board = (state && state.board) ? [...state.board] : Array(size*size).fill("");
+        const cur = board[i];
+        const pSym = cfg.playerSymbol || "X", aSym = cfg.adminSymbol || "O";
+        board[i] = cur === "" ? pSym : cur === pSym ? aSym : "";
+        roomRef.child("game/state/board").set(board);
+      });
+      grid.appendChild(cell);
+    }
+  }
+  const board = (state && state.board) || Array(size*size).fill("");
+  [...grid.children].forEach((cell,i) => cell.textContent = board[i] || "");
+}
+document.getElementById("ttt-force-player-win").addEventListener("click", () => {
+  if(roomRef) roomRef.child("game/state/winner").set("player");
+  addHistory(`<span style="color:#4caf50;">Rigged:</span> forced them to win Tic-Tac-Toe`);
+});
+document.getElementById("ttt-force-admin-win").addEventListener("click", () => {
+  if(roomRef) roomRef.child("game/state/winner").set("admin");
+  addHistory(`<span style="color:#4caf50;">Rigged:</span> forced you to win Tic-Tac-Toe`);
+});
+document.getElementById("ttt-force-draw").addEventListener("click", () => {
+  if(roomRef) roomRef.child("game/state/winner").set("draw");
+});
+
+// ---------- SNAKE ----------
+function snakeStart(){
+  if(!roomRef) return;
+  const boardSize = parseInt(document.getElementById("snake-size").value) || 15;
+  const appleCount = parseInt(document.getElementById("snake-apples").value) || 3;
+  const speedMs = parseInt(document.getElementById("snake-speed").value) || 150;
+  roomRef.child("game").set({
+    type: "snake",
+    config: { boardSize, appleCount, speedMs },
+    state: { snake: [], apples: [], score: 0, gameOver: false },
+    cmd: null
+  });
+  roomRef.update({ status: "game" });
+  addHistory(`<span style="color:#aaa;">Started</span> Snake (${boardSize}x${boardSize} board)`);
+}
+document.getElementById("snake-start").addEventListener("click", snakeStart);
+document.getElementById("snake-reset").addEventListener("click", () => sendSnakeCmd({ resetGame: true }));
+function sendSnakeCmd(cmd){
+  if(!roomRef) return;
+  roomRef.child("game/cmd").set({ ...cmd, id: Date.now() + Math.random() });
+}
+document.getElementById("snake-add-apple").addEventListener("click", () => sendSnakeCmd({ addApple: true }));
+document.getElementById("snake-remove-apples").addEventListener("click", () => sendSnakeCmd({ removeApples: true }));
+document.getElementById("snake-grow").addEventListener("click", () => sendSnakeCmd({ growSnake: 3 }));
+document.getElementById("snake-shrink").addEventListener("click", () => sendSnakeCmd({ shrinkSnake: 3 }));
+document.getElementById("snake-set-speed").addEventListener("click", () => {
+  const ms = parseInt(document.getElementById("snake-new-speed").value);
+  if(ms) sendSnakeCmd({ setSpeed: ms });
+});
+document.getElementById("snake-force-gameover").addEventListener("click", () => {
+  sendSnakeCmd({ forceGameOver: true });
+  addHistory(`<span style="color:#4caf50;">Rigged:</span> forced Snake game over`);
+});
+const snakeAdminCtx = document.getElementById("snake-admin-canvas").getContext("2d");
+function drawSnakeAdmin(cfg, state){
+  const size = cfg.boardSize || 15;
+  const canvas = document.getElementById("snake-admin-canvas");
+  const cellPx = canvas.width / size;
+  snakeAdminCtx.fillStyle = "#0a0a0a"; snakeAdminCtx.fillRect(0,0,canvas.width,canvas.height);
+  snakeAdminCtx.fillStyle = "#e53935";
+  (state.apples||[]).forEach(a => snakeAdminCtx.fillRect(a.x*cellPx+1, a.y*cellPx+1, cellPx-2, cellPx-2));
+  (state.snake||[]).forEach((s,i) => {
+    snakeAdminCtx.fillStyle = i===0 ? "#8bc34a" : "#4caf50";
+    snakeAdminCtx.fillRect(s.x*cellPx+1, s.y*cellPx+1, cellPx-2, cellPx-2);
+  });
+  document.getElementById("snake-admin-score").textContent =
+    state.gameOver ? `Game over — score: ${state.score||0}` : `Score: ${state.score||0}`;
+}
+
+// ---------- RPS ----------
+function rpsStart(){
+  if(!roomRef) return;
+  roomRef.child("game").set({
+    type: "rps", config: {},
+    state: { playerChoice: null, adminChoice: null, result: null, playerScore: 0, adminScore: 0 }
+  });
+  roomRef.update({ status: "game" });
+  addHistory(`<span style="color:#aaa;">Started</span> Rock Paper Scissors`);
+}
+document.getElementById("rps-start").addEventListener("click", rpsStart);
+document.getElementById("rps-reset-scores").addEventListener("click", () => {
+  if(roomRef) roomRef.child("game/state").update({ playerScore: 0, adminScore: 0, playerChoice: null, adminChoice: null, result: null });
+});
+function rpsResolve(playerChoice, adminChoice){
+  if(playerChoice === adminChoice) return "tie";
+  const beats = { rock: "scissors", paper: "rock", scissors: "paper" };
+  return beats[playerChoice] === adminChoice ? "player" : "admin";
+}
+document.querySelectorAll(".rps-admin-choice").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if(!roomRef) return;
+    roomRef.child("game/state").once("value", (snap) => {
+      const state = snap.val() || {};
+      const adminChoice = btn.dataset.choice;
+      const result = state.playerChoice ? rpsResolve(state.playerChoice, adminChoice) : null;
+      const update = { adminChoice, result };
+      if(result === "player") update.playerScore = (state.playerScore||0) + 1;
+      if(result === "admin") update.adminScore = (state.adminScore||0) + 1;
+      roomRef.child("game/state").update(update);
+    });
+  });
+});
+function rpsForce(result){
+  if(!roomRef) return;
+  roomRef.child("game/state").once("value", (snap) => {
+    const state = snap.val() || {};
+    const update = { result };
+    if(result === "player") update.playerScore = (state.playerScore||0) + 1;
+    if(result === "admin") update.adminScore = (state.adminScore||0) + 1;
+    roomRef.child("game/state").update(update);
+  });
+  addHistory(`<span style="color:#4caf50;">Rigged:</span> forced RPS result — ${result}`);
+}
+document.getElementById("rps-force-player-win").addEventListener("click", () => rpsForce("player"));
+document.getElementById("rps-force-admin-win").addEventListener("click", () => rpsForce("admin"));
+document.getElementById("rps-force-tie").addEventListener("click", () => rpsForce("tie"));
+
+// ---------- REACTION TEST ----------
+function reactionStart(){
+  if(!roomRef) return;
+  const minDelayMs = parseInt(document.getElementById("reaction-min-delay").value) || 1500;
+  const maxDelayMs = parseInt(document.getElementById("reaction-max-delay").value) || 4000;
+  roomRef.child("game").set({
+    type: "reaction", config: { minDelayMs, maxDelayMs }, state: {}
+  });
+  roomRef.update({ status: "game" });
+  addHistory(`<span style="color:#aaa;">Started</span> Reaction Test`);
+}
+document.getElementById("reaction-start").addEventListener("click", reactionStart);
+document.getElementById("reaction-new-round").addEventListener("click", () => {
+  if(!roomRef) return;
+  roomRef.child("game/config").once("value", snap => {
+    roomRef.child("game").update({ config: snap.val(), state: {} });
+  });
+});
+document.getElementById("reaction-force").addEventListener("click", () => {
+  const ms = document.getElementById("reaction-forced-ms").value.trim();
+  if(!ms || !roomRef) return;
+  roomRef.child("game/state/forcedResultMs").set(ms);
+  addHistory(`<span style="color:#4caf50;">Rigged:</span> sent fake reaction time — ${ms}ms`);
+});
+
+// ---------- WHACK A MOLE ----------
+function wamStart(){
+  if(!roomRef) return;
+  const gridSize = parseInt(document.getElementById("wam-grid-size").value) || 3;
+  const spawnRateMs = parseInt(document.getElementById("wam-spawn-rate").value) || 900;
+  roomRef.child("game").set({
+    type: "whackamole", config: { gridSize, spawnRateMs }, state: { score: 0 }, cmd: null
+  });
+  roomRef.update({ status: "game" });
+  addHistory(`<span style="color:#aaa;">Started</span> Whack-a-Mole (${gridSize}x${gridSize})`);
+}
+document.getElementById("wam-start").addEventListener("click", wamStart);
+document.getElementById("wam-reset").addEventListener("click", () => {
+  if(!roomRef) return;
+  roomRef.child("game/cmd").set({ resetGame: true, id: Date.now()+Math.random() });
+});
+document.getElementById("wam-set-rate").addEventListener("click", () => {
+  const ms = parseInt(document.getElementById("wam-new-rate").value);
+  if(ms && roomRef) roomRef.child("game/config/spawnRateMs").set(ms);
+});
+document.getElementById("wam-force-gameover").addEventListener("click", () => {
+  if(!roomRef) return;
+  roomRef.child("game/cmd").set({ forceGameOver: true, id: Date.now()+Math.random() });
+  addHistory(`<span style="color:#4caf50;">Rigged:</span> forced Whack-a-Mole game over`);
+});
+
+// ---------- Mirror game state live on admin screen ----------
+if(roomRef) roomRef.child("game").on("value", (snap) => {
+  const game = snap.val();
+  if(!game) return;
+  if(game.type === "tictactoe") renderTTTAdminGrid(game.config || {size:3}, game.state || {});
+  if(game.type === "snake") drawSnakeAdmin(game.config || {boardSize:15}, game.state || {});
+  if(game.type === "rps"){
+    document.getElementById("rps-player-choice").textContent =
+      game.state && game.state.playerChoice ? game.state.playerChoice : "Waiting...";
+  }
+  if(game.type === "reaction"){
+    const s = game.state || {};
+    document.getElementById("reaction-actual-result").textContent =
+      s.lastResultMs !== undefined ? `${s.lastResultMs}${typeof s.lastResultMs === "number" ? "ms" : ""}` : "Waiting...";
+  }
+  if(game.type === "whackamole"){
+    document.getElementById("wam-live-score").textContent = `Score: ${(game.state && game.state.score) || 0}`;
+  }
+});
+</script>
+</body>
+</html>
