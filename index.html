@@ -52,6 +52,11 @@
   <button class="tab-btn" data-tab="history">History</button>
 </div>
 
+<div class="row" style="margin-bottom:18px;">
+  <button class="no" id="panic-btn">🚨 Panic — end now</button>
+  <button class="ghost" id="recap-btn">🏁 End with recap</button>
+</div>
+
 <!-- ============ CONNECT TAB ============ -->
 <div class="tab-panel active" id="tab-connect">
   <div class="card">
@@ -775,6 +780,29 @@ if(roomRef) roomRef.child("game").on("value", (snap) => {
   if(game.type === "whackamole"){
     document.getElementById("wam-live-score").textContent = `Score: ${(game.state && game.state.score) || 0}`;
   }
+});
+
+// ---------- PANIC / RECAP ----------
+document.getElementById("panic-btn").addEventListener("click", () => {
+  if(!roomRef) return;
+  if(!confirm("This immediately blanks their screen and ends the session. Continue?")) return;
+  roomRef.update({ status: "panic" });
+  addHistory(`<span style="color:#e53935;">🚨 Panic button pressed</span> — session ended`);
+});
+
+document.getElementById("recap-btn").addEventListener("click", () => {
+  if(!roomRef) return;
+  const questionsAsked = historyEntries.filter(l => l.includes("You asked:")).length;
+  const gamesStarted = historyEntries.filter(l => l.includes("Started")).length;
+  const rigged = historyEntries.filter(l => l.includes("Rigged:")).length;
+  const recapHtml = `
+    <p>Questions asked: <strong>${questionsAsked}</strong></p>
+    <p>Games played: <strong>${gamesStarted}</strong></p>
+    <p>Things secretly rigged: <strong>${rigged}</strong> 😏</p>
+    <p style="color:#888;margin-top:12px;">Thanks for playing MindReader.</p>
+  `;
+  roomRef.update({ status: "recap", recapHtml });
+  addHistory(`<span style="color:#aaa;">🏁 Ended session with recap</span>`);
 });
 </script>
 </body>
