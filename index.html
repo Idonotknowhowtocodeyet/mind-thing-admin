@@ -57,6 +57,38 @@
   <button class="ghost" id="recap-btn">🏁 End with recap</button>
 </div>
 
+<div class="card">
+  <label>Fake notifications (fires instantly, any screen, any time)</label>
+  <div class="row" style="margin-bottom:12px;">
+    <button class="ghost notif-preset" data-icon="🔴" data-title="Screen Recording" data-msg="Your screen is now being recorded">🔴 Screen recording</button>
+    <button class="ghost notif-preset" data-icon="🔋" data-title="Battery Low" data-msg="10% battery remaining">🔋 Battery low</button>
+    <button class="ghost notif-preset" data-icon="💬" data-title="Mom" data-msg="Are you home yet?">💬 Message from Mom</button>
+    <button class="ghost notif-preset" data-icon="📸" data-title="Photos" data-msg="1 new photo added to shared album">📸 New photo</button>
+    <button class="ghost notif-preset" data-icon="⚠️" data-title="System" data-msg="Unusual activity detected on this device">⚠️ System warning</button>
+  </div>
+  <div class="row">
+    <input type="text" id="notif-title" placeholder="Custom title" style="flex:1;">
+    <input type="text" id="notif-msg" placeholder="Custom message" style="flex:2;">
+    <button class="primary" id="notif-send" style="flex-shrink:0;">Send</button>
+  </div>
+</div>
+
+<div class="card">
+  <label>Countdown bomb (full-screen overlay, any time)</label>
+  <div class="row" style="margin-bottom:12px;">
+    <div style="flex:1;">
+      <label style="font-size:12px;">Seconds</label>
+      <input type="text" id="bomb-seconds" value="15">
+    </div>
+    <div style="flex:2;">
+      <label style="font-size:12px;">Message</label>
+      <input type="text" id="bomb-message-input" placeholder="Which wire do you cut?">
+    </div>
+  </div>
+  <button class="no" id="bomb-send">💣 Send bomb</button>
+  <span id="bomb-outcome-status" style="font-size:13px;color:#888;margin-left:12px;"></span>
+</div>
+
 <!-- ============ CONNECT TAB ============ -->
 <div class="tab-panel active" id="tab-connect">
   <div class="card">
@@ -143,6 +175,26 @@
     </div>
     <button class="ghost" id="trigger-analyzing">Show "Analyzing..." only</button>
     <button class="ghost" id="reset-question">Back to question screen</button>
+
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid #262626;">
+      <label>⚡ Lie detector verdict (dramatic full-screen reveal instead of plain text)</label>
+      <div class="row" style="margin-bottom:14px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;">Verdict</label>
+          <select id="lie-verdict-select">
+            <option value="truthful">Truthful</option>
+            <option value="lying">Deception detected</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Confidence %</label>
+          <input type="text" id="lie-percent-input" placeholder="e.g. 92" value="87">
+        </div>
+      </div>
+      <button class="no" id="lie-reveal-btn">⚡ Reveal lie detector verdict</button>
+      <small class="hint">Tip: hit "Show Analyzing..." first so the mic-reactive bars build suspense,
+      then reveal the verdict whenever you want.</small>
+    </div>
   </div>
 </div>
 
@@ -168,6 +220,9 @@
       </label>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
         <input type="radio" name="gametype" value="whackamole"> Whack-a-Mole
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;margin:0;">
+        <input type="radio" name="gametype" value="quiz"> Quiz
       </label>
     </div>
 
@@ -310,6 +365,57 @@
           <button class="ghost" id="wam-set-rate">Set live speed</button>
         </div>
         <button class="no" id="wam-force-gameover">Force game over</button>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quiz-config" style="display:none;">
+      <label style="font-size:12px;">Topic for AI-generated questions</label>
+      <input type="text" id="quiz-topic" placeholder="e.g. 80s movies, our relationship, dumb trivia">
+      <div class="row" style="margin-bottom:14px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;">Number of questions</label>
+          <select id="quiz-count">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Difficulty</label>
+          <select id="quiz-difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+            <option value="trick">Trick questions</option>
+          </select>
+        </div>
+      </div>
+      <button class="primary" id="quiz-generate">✨ Generate with AI</button>
+      <div id="quiz-gen-status" style="font-size:12px;color:#888;margin-top:8px;"></div>
+
+      <div id="quiz-preview" style="margin-top:14px;max-height:200px;overflow-y:auto;
+        font-size:13px;color:#ccc;display:none;background:#0d0d0d;border:1px solid #222;
+        border-radius:8px;padding:10px;"></div>
+
+      <div style="margin-top:14px;">
+        <label style="font-size:12px;">Or write your own (one per line: Question | OptA, OptB, OptC, OptD | correct option number)</label>
+        <textarea id="quiz-manual" placeholder="What color is the sky? | Blue, Red, Green, Purple | 1" style="min-height:80px;"></textarea>
+      </div>
+
+      <button class="primary" id="quiz-start">Start Quiz</button>
+
+      <div style="margin-top:16px;">
+        <label>Their current pick</label>
+        <div id="quiz-player-pick" style="font-size:15px;color:#fff;margin-bottom:10px;">Waiting...</div>
+        <label>Live score</label>
+        <div id="quiz-live-score" style="font-size:15px;color:#fff;margin-bottom:10px;">Score: 0</div>
+        <div class="row">
+          <button class="yes" id="quiz-mark-correct">Mark correct</button>
+          <button class="no" id="quiz-mark-wrong">Mark wrong</button>
+          <button class="ghost" id="quiz-next">Next question →</button>
+        </div>
       </div>
     </div>
   </div>
@@ -482,7 +588,7 @@ document.getElementById("send-question").addEventListener("click", () => {
   const noLabel = document.getElementById("no-label").value.trim() || "No";
   const update = {
     question: q, questionMode: mode, yesLabel, noLabel,
-    status: "asking", answer: "", playerAnswer: "", answerFeedback: null
+    status: "asking", answer: "", playerAnswer: "", answerFeedback: null, verdictMode: false
   };
   let modeLabel = `${yesLabel} / ${noLabel}`;
   if(mode === "multi"){
@@ -504,7 +610,7 @@ document.getElementById("reset-question").addEventListener("click", () => {
 });
 
 function reveal(answer, feedback){
-  if(roomRef) roomRef.update({ answer, status: "answered", answerFeedback: feedback || null });
+  if(roomRef) roomRef.update({ answer, status: "answered", answerFeedback: feedback || null, verdictMode: false });
   addHistory(`<span style="color:#4caf50;">You revealed:</span> <strong>${answer}</strong>`);
 }
 document.getElementById("reveal-yes").addEventListener("click", () => reveal(document.getElementById("yes-label").value.trim() || "Yes"));
@@ -529,6 +635,19 @@ document.getElementById("reveal-wrong").addEventListener("click", () => {
   reveal(val, "wrong");
 });
 
+document.getElementById("lie-reveal-btn").addEventListener("click", () => {
+  if(!roomRef) return;
+  const verdictLabel = document.getElementById("lie-verdict-select").value;
+  const verdictPercent = parseInt(document.getElementById("lie-percent-input").value) || 50;
+  roomRef.update({
+    status: "answered",
+    verdictMode: true,
+    verdictLabel, verdictPercent,
+    answerFeedback: verdictLabel === "lying" ? "wrong" : "correct"
+  });
+  addHistory(`<span style="color:#4caf50;">⚡ Lie detector verdict:</span> ${verdictLabel === "lying" ? "DECEPTION" : "TRUTHFUL"} (${verdictPercent}%)`);
+});
+
 document.getElementById("toggle-cam").addEventListener("click", () => {
   const vid = document.getElementById("their-cam");
   const hidden = vid.style.display === "none";
@@ -551,6 +670,7 @@ document.querySelectorAll('input[name="gametype"]').forEach(el => {
     document.getElementById("rps-config").style.display = type === "rps" ? "block" : "none";
     document.getElementById("reaction-config").style.display = type === "reaction" ? "block" : "none";
     document.getElementById("whackamole-config").style.display = type === "whackamole" ? "block" : "none";
+    document.getElementById("quiz-config").style.display = type === "quiz" ? "block" : "none";
   });
 });
 
@@ -762,6 +882,112 @@ document.getElementById("wam-force-gameover").addEventListener("click", () => {
   addHistory(`<span style="color:#4caf50;">Rigged:</span> forced Whack-a-Mole game over`);
 });
 
+// ---------- QUIZ ----------
+let quizQuestions = [];
+
+function parseManualQuiz(text){
+  return text.split("\n").map(line => line.trim()).filter(Boolean).map(line => {
+    const parts = line.split("|");
+    if(parts.length < 3) return null;
+    const question = parts[0].trim();
+    const options = parts[1].split(",").map(o => o.trim()).filter(Boolean);
+    const correctIndex = parseInt(parts[2].trim()) - 1;
+    if(!question || options.length < 2 || isNaN(correctIndex)) return null;
+    return { question, options, correctIndex };
+  }).filter(Boolean);
+}
+
+function renderQuizPreview(){
+  const box = document.getElementById("quiz-preview");
+  if(quizQuestions.length === 0){ box.style.display = "none"; return; }
+  box.style.display = "block";
+  box.innerHTML = quizQuestions.map((q,i) =>
+    `<div style="margin-bottom:8px;"><strong>${i+1}. ${q.question}</strong><br>` +
+    q.options.map((o,oi) => `${oi===q.correctIndex ? "✅" : "•"} ${o}`).join(" &nbsp; ") +
+    `</div>`
+  ).join("");
+}
+
+document.getElementById("quiz-generate").addEventListener("click", async () => {
+  const topic = document.getElementById("quiz-topic").value.trim() || "general trivia";
+  const count = document.getElementById("quiz-count").value;
+  const difficulty = document.getElementById("quiz-difficulty").value;
+  const statusEl = document.getElementById("quiz-gen-status");
+  statusEl.textContent = "Generating with AI...";
+  statusEl.style.color = "#888";
+
+  const prompt = `Generate exactly ${count} multiple-choice quiz questions about "${topic}" at ${difficulty} difficulty. ` +
+    `Respond with ONLY a raw JSON array, no markdown, no code fences, no explanation. Each item must look like: ` +
+    `{"question": "...", "options": ["...","...","...","..."], "correctIndex": 0}. ` +
+    `correctIndex is the 0-based index of the correct option in the options array. Exactly 4 options each.`;
+
+  try{
+    const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+    let text = await res.text();
+    text = text.trim().replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim();
+    const firstBracket = text.indexOf("[");
+    const lastBracket = text.lastIndexOf("]");
+    if(firstBracket >= 0 && lastBracket > firstBracket){
+      text = text.slice(firstBracket, lastBracket+1);
+    }
+    const parsed = JSON.parse(text);
+    quizQuestions = parsed.filter(q => q.question && Array.isArray(q.options) && q.options.length >= 2)
+      .map(q => ({ question: q.question, options: q.options, correctIndex: q.correctIndex || 0 }));
+    if(quizQuestions.length === 0) throw new Error("AI returned no usable questions");
+    statusEl.textContent = `Generated ${quizQuestions.length} questions — review below, then Start Quiz.`;
+    statusEl.style.color = "#8bc34a";
+    renderQuizPreview();
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = "AI generation failed (" + err.message + "). Try again, or write questions manually below.";
+    statusEl.style.color = "#ff8a80";
+  }
+});
+
+document.getElementById("quiz-start").addEventListener("click", () => {
+  if(!roomRef) return;
+  const manual = parseManualQuiz(document.getElementById("quiz-manual").value);
+  const questions = manual.length > 0 ? manual : quizQuestions;
+  if(questions.length === 0){
+    document.getElementById("quiz-gen-status").textContent = "No questions yet — generate with AI or write your own.";
+    document.getElementById("quiz-gen-status").style.color = "#ff8a80";
+    return;
+  }
+  roomRef.child("game").set({
+    type: "quiz",
+    config: { questions },
+    state: { qIndex: 0, score: 0, playerAnswerIndex: null, revealed: null, correct: null }
+  });
+  roomRef.update({ status: "game" });
+  addHistory(`<span style="color:#aaa;">Started</span> Quiz (${questions.length} questions)`);
+});
+
+document.getElementById("quiz-mark-correct").addEventListener("click", () => quizMark(true));
+document.getElementById("quiz-mark-wrong").addEventListener("click", () => quizMark(false));
+function quizMark(correct){
+  if(!roomRef) return;
+  roomRef.child("game/state").once("value", (snap) => {
+    const state = snap.val() || {};
+    const score = correct ? (state.score||0) + 1 : (state.score||0);
+    roomRef.child("game/state").update({ correct, revealed: Date.now(), score });
+  });
+  addHistory(`<span style="color:#aaa;">Quiz:</span> marked ${correct ? "correct ✅" : "wrong ❌"}`);
+}
+document.getElementById("quiz-next").addEventListener("click", () => {
+  if(!roomRef) return;
+  roomRef.child("game").once("value", (snap) => {
+    const game = snap.val() || {};
+    const state = game.state || {};
+    const total = (game.config && game.config.questions || []).length;
+    const nextIndex = (state.qIndex||0) + 1;
+    if(nextIndex >= total){
+      addHistory(`<span style="color:#4caf50;">Quiz finished</span> — final score ${state.score||0}/${total}`);
+      return;
+    }
+    roomRef.child("game/state").update({ qIndex: nextIndex, playerAnswerIndex: null, revealed: null, correct: null });
+  });
+});
+
 // ---------- Mirror game state live on admin screen ----------
 if(roomRef) roomRef.child("game").on("value", (snap) => {
   const game = snap.val();
@@ -780,6 +1006,50 @@ if(roomRef) roomRef.child("game").on("value", (snap) => {
   if(game.type === "whackamole"){
     document.getElementById("wam-live-score").textContent = `Score: ${(game.state && game.state.score) || 0}`;
   }
+  if(game.type === "quiz"){
+    const state = game.state || {};
+    const questions = (game.config && game.config.questions) || [];
+    const q = questions[state.qIndex || 0];
+    document.getElementById("quiz-player-pick").textContent =
+      (q && state.playerAnswerIndex !== null && state.playerAnswerIndex !== undefined)
+        ? q.options[state.playerAnswerIndex] : "Waiting...";
+    document.getElementById("quiz-live-score").textContent =
+      `Score: ${state.score || 0} — Question ${(state.qIndex||0)+1} of ${questions.length}`;
+  }
+});
+
+// ---------- FAKE NOTIFICATIONS ----------
+function sendNotif(icon, title, message){
+  if(!roomRef || !message) return;
+  roomRef.child("notif").set({ icon, title, message, id: Date.now() + Math.random() });
+  addHistory(`<span style="color:#aaa;">📬 Sent fake notification:</span> "${title}: ${message}"`);
+}
+document.querySelectorAll(".notif-preset").forEach(btn => {
+  btn.addEventListener("click", () => sendNotif(btn.dataset.icon, btn.dataset.title, btn.dataset.msg));
+});
+document.getElementById("notif-send").addEventListener("click", () => {
+  const title = document.getElementById("notif-title").value.trim() || "Notification";
+  const msg = document.getElementById("notif-msg").value.trim();
+  if(!msg) return;
+  sendNotif("🔔", title, msg);
+  document.getElementById("notif-msg").value = "";
+});
+
+// ---------- COUNTDOWN BOMB ----------
+document.getElementById("bomb-send").addEventListener("click", () => {
+  if(!roomRef) return;
+  const seconds = parseInt(document.getElementById("bomb-seconds").value) || 15;
+  const message = document.getElementById("bomb-message-input").value.trim();
+  roomRef.child("bomb").set({ seconds, message, id: Date.now() + Math.random(), outcome: null });
+  document.getElementById("bomb-outcome-status").textContent = "Armed — waiting...";
+  document.getElementById("bomb-outcome-status").style.color = "#888";
+  addHistory(`<span style="color:#aaa;">💣 Sent countdown bomb</span> (${seconds}s)`);
+});
+if(roomRef) roomRef.child("bomb/outcome").on("value", (snap) => {
+  const outcome = snap.val();
+  const el = document.getElementById("bomb-outcome-status");
+  if(outcome === "defused"){ el.textContent = "They defused it ✅"; el.style.color = "#8bc34a"; }
+  if(outcome === "exploded"){ el.textContent = "It exploded on them 💥"; el.style.color = "#ff8a80"; }
 });
 
 // ---------- PANIC / RECAP ----------
