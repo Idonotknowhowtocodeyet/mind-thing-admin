@@ -447,6 +447,14 @@ const firebaseConfig = {
 // =====================================================================
 
 let db = null;
+if(location.protocol === "file:"){
+  const warn = document.createElement("div");
+  warn.style.cssText = "background:#5c1a1a;color:#fff;padding:10px 16px;border-radius:8px;" +
+    "font-size:12px;margin-bottom:16px;";
+  warn.textContent = "⚠️ Opened as a local file — camera/microphone sharing from your friend " +
+    "won't connect reliably here. Host this on GitHub Pages (or similar) and open it over https:// instead.";
+  document.body.insertBefore(warn, document.body.firstChild);
+}
 try{
   if(firebaseConfig.databaseURL === "PASTE_YOUR_DATABASE_URL_HERE" || !firebaseConfig.databaseURL.startsWith("http")){
     throw new Error("databaseURL not filled in yet");
@@ -522,7 +530,12 @@ if(db){
 
 // ----- Receive their camera feed -----
 if(roomRef){
-  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+  const pc = new RTCPeerConnection({ iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
+  ] });
   pc.ontrack = (e) => {
     const vid = document.getElementById("their-cam");
     vid.srcObject = e.streams[0];
@@ -530,6 +543,20 @@ if(roomRef){
     document.getElementById("cam-status").textContent = "Live";
   };
   pc.onicecandidate = (e) => { if(e.candidate) roomRef.child("webrtc/adminCandidates").push(e.candidate.toJSON()); };
+  pc.oniceconnectionstatechange = () => {
+    const state = pc.iceConnectionState;
+    console.log("WebRTC ICE state:", state);
+    const statusEl = document.getElementById("cam-status");
+    if(state === "connected" || state === "completed"){
+      statusEl.textContent = "Live";
+    }else if(state === "checking"){
+      statusEl.textContent = "Connecting (checking network paths)…";
+    }else if(state === "failed"){
+      statusEl.textContent = "Connection failed — their network may be blocking video. Trying relay...";
+    }else if(state === "disconnected"){
+      statusEl.textContent = "Connection lost, retrying...";
+    }
+  };
   roomRef.child("webrtc/offer").on("value", async (snap) => {
     if(snap.exists() && !pc.currentRemoteDescription){
       await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(snap.val())));
