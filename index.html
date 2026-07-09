@@ -49,6 +49,9 @@
   <button class="tab-btn active" data-tab="connect">Connect</button>
   <button class="tab-btn" data-tab="ask">Ask</button>
   <button class="tab-btn" data-tab="games">Games</button>
+  <button class="tab-btn" data-tab="fx">FX</button>
+  <button class="tab-btn" data-tab="sequence">Sequence</button>
+  <button class="tab-btn" data-tab="test">Test</button>
   <button class="tab-btn" data-tab="history">History</button>
 </div>
 
@@ -57,6 +60,8 @@
   <button class="ghost" id="recap-btn">🏁 End with recap</button>
 </div>
 
+<!-- ============ FX TAB ============ -->
+<div class="tab-panel" id="tab-fx">
 <div class="card">
   <label>Fake notifications (fires instantly, any screen, any time)</label>
   <div class="row" style="margin-bottom:12px;">
@@ -74,19 +79,136 @@
 </div>
 
 <div class="card">
-  <label>Countdown bomb (full-screen overlay, any time)</label>
+  <label>Countdown bomb — cut the wire (full-screen overlay, any time)</label>
   <div class="row" style="margin-bottom:12px;">
     <div style="flex:1;">
       <label style="font-size:12px;">Seconds</label>
-      <input type="text" id="bomb-seconds" value="15">
+      <input type="text" id="bomb-seconds" value="20">
     </div>
-    <div style="flex:2;">
-      <label style="font-size:12px;">Message</label>
-      <input type="text" id="bomb-message-input" placeholder="Which wire do you cut?">
+    <div style="flex:1;">
+      <label style="font-size:12px;">Number of wires (2-8)</label>
+      <input type="text" id="bomb-wire-count" value="4">
     </div>
+  </div>
+  <label style="font-size:12px;">Message</label>
+  <input type="text" id="bomb-message-input" placeholder="Cut the correct wire before time runs out">
+  <div style="margin-bottom:14px;">
+    <label style="font-size:12px;">Correct wire</label>
+    <select id="bomb-correct-wire">
+      <option value="random" selected>Random (you won't know either)</option>
+      <option value="0">Wire 1</option>
+      <option value="1">Wire 2</option>
+      <option value="2">Wire 3</option>
+      <option value="3">Wire 4</option>
+      <option value="4">Wire 5</option>
+      <option value="5">Wire 6</option>
+      <option value="6">Wire 7</option>
+      <option value="7">Wire 8</option>
+    </select>
+    <small class="hint">If you pick a fixed wire number higher than your wire count, it'll fall back to random.</small>
   </div>
   <button class="no" id="bomb-send">💣 Send bomb</button>
   <span id="bomb-outcome-status" style="font-size:13px;color:#888;margin-left:12px;"></span>
+</div>
+
+<div class="card">
+  <label>🎭 Dare card (full-screen challenge, any time)</label>
+  <div class="row" style="margin-bottom:12px;">
+    <button class="ghost dare-preset" data-text="Do your best impression of a chicken for 10 seconds">🐔 Chicken impression</button>
+    <button class="ghost dare-preset" data-text="Sing the next thing you say instead of talking">🎤 Sing everything</button>
+    <button class="ghost dare-preset" data-text="Talk in an accent until told to stop">🗣️ Accent time</button>
+    <button class="ghost dare-preset" data-text="Do 10 pushups right now">💪 10 pushups</button>
+  </div>
+  <div class="row" style="margin-bottom:14px;">
+    <input type="text" id="dare-text-input" placeholder="Custom dare..." style="flex:2;">
+    <input type="text" id="dare-seconds-input" placeholder="Time limit (s, optional)" style="flex:1;">
+    <button class="primary" id="dare-send" style="flex-shrink:0;">Send dare</button>
+  </div>
+  <span id="dare-outcome-status" style="font-size:13px;color:#888;"></span>
+</div>
+
+<div class="card">
+  <label>💬 Truth card (they must answer honestly, sent full-screen)</label>
+  <div class="row" style="margin-bottom:12px;">
+    <button class="ghost truth-preset" data-text="What's your biggest fear?">😨 Biggest fear</button>
+    <button class="ghost truth-preset" data-text="Who was your first crush?">💘 First crush</button>
+    <button class="ghost truth-preset" data-text="What's the most embarrassing thing you've done?">🙈 Embarrassing moment</button>
+  </div>
+  <div class="row" style="margin-bottom:14px;">
+    <input type="text" id="truth-text-input" placeholder="Custom truth question..." style="flex:1;">
+    <button class="primary" id="truth-send" style="flex-shrink:0;">Send truth</button>
+  </div>
+  <div id="truth-answer-display" style="font-size:13px;color:#ccc;background:#0d0d0d;
+    border:1px solid #222;border-radius:8px;padding:10px;display:none;"></div>
+</div>
+
+<div class="card">
+  <label>📞 Fake incoming call</label>
+  <div class="row">
+    <input type="text" id="call-name-input" placeholder="Caller name (e.g. Mom, Unknown Number)" style="flex:1;">
+    <button class="primary" id="call-send" style="flex-shrink:0;">Ring their phone</button>
+  </div>
+  <span id="call-outcome-status" style="font-size:13px;color:#888;"></span>
+</div>
+
+<div class="card">
+  <label>💻 Screen glitch / fake crash</label>
+  <div class="row" style="margin-bottom:12px;">
+    <textarea id="glitch-text-input" placeholder="SYSTEM ERROR&#10;Recovering data..." style="flex:2;min-height:50px;"></textarea>
+    <input type="text" id="glitch-seconds-input" placeholder="Seconds (default 4)" style="flex:1;">
+  </div>
+  <button class="no" id="glitch-send">💻 Trigger glitch</button>
+</div>
+
+<div class="card">
+  <label>🎡 Spin the wheel</label>
+  <small class="hint" style="margin-bottom:10px;">Type options separated by commas — dares, truths,
+  punishments, whatever. Spin picks one at random (or you can rig it) and sends it to their screen
+  as a dramatic reveal.</small>
+  <textarea id="wheel-options-input" placeholder="Do 20 jumping jacks, Speak in a British accent for 5 minutes, Text your crush, Sing happy birthday to yourself" style="min-height:60px;margin-bottom:12px;"></textarea>
+  <div id="wheel-spin-display" style="font-size:22px;font-weight:700;color:#f9a825;
+    min-height:32px;margin-bottom:12px;">Ready to spin</div>
+  <div class="row">
+    <button class="primary" id="wheel-spin-btn">🎡 Spin!</button>
+    <select id="wheel-rig-select" style="flex:1;">
+      <option value="random" selected>Random result</option>
+    </select>
+  </div>
+</div>
+</div>
+
+<!-- ============ SEQUENCE TAB ============ -->
+<div class="tab-panel" id="tab-sequence">
+<div class="card">
+  <label>🎬 Sequence builder — chain effects into a scripted mini-experience</label>
+  <small class="hint" style="margin-bottom:14px;">Build a list of steps below. Hit Play and they'll fire
+  automatically in order, waiting the delay you set before each one — so you can walk away and let it run,
+  or narrate along in person while it plays out.</small>
+
+  <div class="row" style="margin-bottom:12px;">
+    <select id="seq-step-type" style="flex:1;">
+      <option value="notif">Fake notification</option>
+      <option value="dare">Dare</option>
+      <option value="truth">Truth</option>
+      <option value="bomb">Countdown bomb</option>
+      <option value="call">Fake call</option>
+      <option value="glitch">Screen glitch</option>
+      <option value="question">Ask yes/no question</option>
+    </select>
+    <input type="text" id="seq-step-text" placeholder="Text / title / message for this step" style="flex:2;">
+    <input type="text" id="seq-step-delay" placeholder="Delay before this step (s)" value="3" style="flex:1;">
+  </div>
+  <button class="ghost" id="seq-add-step">+ Add step to sequence</button>
+
+  <div id="seq-list" style="margin-top:16px;"></div>
+
+  <div class="row" style="margin-top:16px;">
+    <button class="primary" id="seq-play">▶ Play sequence</button>
+    <button class="ghost" id="seq-stop">■ Stop</button>
+    <button class="ghost" id="seq-clear">Clear all</button>
+  </div>
+  <div id="seq-status" style="font-size:13px;color:#888;margin-top:10px;"></div>
+</div>
 </div>
 
 <!-- ============ CONNECT TAB ============ -->
@@ -115,10 +237,12 @@
     <video id="their-cam" autoplay playsinline muted style="width:100%;max-width:320px;border-radius:8px;
       background:#000;display:none;"></video>
     <div id="cam-status" style="font-size:13px;color:#777;margin:8px 0;">No feed yet.</div>
-    <div class="row">
+    <div class="row" style="margin-bottom:14px;">
       <button class="ghost" id="toggle-cam">Hide video</button>
       <button class="ghost" id="toggle-mic">Mute audio</button>
+      <button class="primary" id="take-snapshot">📸 Take snapshot</button>
     </div>
+    <div id="snapshot-gallery" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
   </div>
 </div>
 
@@ -421,13 +545,31 @@
   </div>
 </div>
 
+<!-- ============ TEST TAB ============ -->
+<div class="tab-panel" id="tab-test">
+  <div class="card">
+    <label>Live preview of what they see</label>
+    <small class="hint" style="margin-bottom:12px;">This is a real player session in this same room —
+    trigger anything from the Ask/Games tabs or the panic/notification/bomb buttons above, and watch it
+    happen here instantly. Mic/camera sharing won't loop back to itself, but everything else (questions,
+    games, notifications, bomb, lie detector) works exactly like it will for your friend.</small>
+    <div class="row" style="margin-bottom:10px;">
+      <button class="ghost" id="test-reload">🔄 Reload preview</button>
+      <button class="ghost" id="test-open-tab">↗ Open in new tab</button>
+    </div>
+    <iframe id="test-iframe" style="width:100%;height:600px;border:1px solid #333;border-radius:10px;
+      background:#000;" src="about:blank"></iframe>
+  </div>
+</div>
+
 <!-- ============ HISTORY TAB ============ -->
 <div class="tab-panel" id="tab-history">
   <div class="card">
     <label>Session history</label>
-    <div id="history-log" style="font-size:13px;color:#ccc;max-height:400px;overflow-y:auto;">
+    <div id="history-log" style="font-size:13px;color:#ccc;max-height:400px;overflow-y:auto;margin-bottom:14px;">
       <em style="color:#666;">Nothing yet this session.</em>
     </div>
+    <button class="ghost" id="export-history">⬇ Export as text file</button>
   </div>
 </div>
 
@@ -491,6 +633,15 @@ function makeRoomCode(){
 let roomId = new URLSearchParams(location.search).get("room") || makeRoomCode();
 history.replaceState(null, "", "?room=" + roomId);
 document.getElementById("share-link").textContent = roomId;
+
+const testIframeSrc = () => `player.html?room=${roomId}`;
+document.getElementById("test-iframe").src = testIframeSrc();
+document.getElementById("test-reload").addEventListener("click", () => {
+  document.getElementById("test-iframe").src = testIframeSrc();
+});
+document.getElementById("test-open-tab").addEventListener("click", () => {
+  window.open(testIframeSrc(), "_blank");
+});
 
 document.getElementById("copy-link").addEventListener("click", () => {
   navigator.clipboard.writeText(roomId);
@@ -686,6 +837,32 @@ document.getElementById("toggle-mic").addEventListener("click", () => {
   vid.muted = !vid.muted;
   document.getElementById("toggle-mic").textContent = vid.muted ? "Unmute audio" : "Mute audio";
   if(!vid.muted) vid.play().catch(()=>{});
+});
+
+// ---------- SNAPSHOTS ----------
+let snapshotCount = 0;
+document.getElementById("take-snapshot").addEventListener("click", () => {
+  const vid = document.getElementById("their-cam");
+  if(!vid.srcObject || vid.videoWidth === 0){
+    addHistory(`<span style="color:#ff8a80;">📸 Snapshot failed</span> — no live video yet`);
+    return;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = vid.videoWidth;
+  canvas.height = vid.videoHeight;
+  canvas.getContext("2d").drawImage(vid, 0, 0);
+  const dataUrl = canvas.toDataURL("image/png");
+  snapshotCount++;
+
+  const thumb = document.createElement("a");
+  thumb.href = dataUrl;
+  thumb.download = `snapshot-${roomId}-${snapshotCount}.png`;
+  thumb.title = "Click to download";
+  thumb.innerHTML = `<img src="${dataUrl}" style="width:80px;height:60px;object-fit:cover;
+    border-radius:6px;border:1px solid #333;">`;
+  document.getElementById("snapshot-gallery").appendChild(thumb);
+
+  addHistory(`<span style="color:#aaa;">📸 Took a snapshot</span> (#${snapshotCount})`);
 });
 
 // ============ GAMES ============
@@ -1065,18 +1242,242 @@ document.getElementById("notif-send").addEventListener("click", () => {
 // ---------- COUNTDOWN BOMB ----------
 document.getElementById("bomb-send").addEventListener("click", () => {
   if(!roomRef) return;
-  const seconds = parseInt(document.getElementById("bomb-seconds").value) || 15;
+  const seconds = parseInt(document.getElementById("bomb-seconds").value) || 20;
+  let wireCount = parseInt(document.getElementById("bomb-wire-count").value) || 4;
+  wireCount = Math.max(2, Math.min(8, wireCount));
   const message = document.getElementById("bomb-message-input").value.trim();
-  roomRef.child("bomb").set({ seconds, message, id: Date.now() + Math.random(), outcome: null });
+  const correctSel = document.getElementById("bomb-correct-wire").value;
+  let correctWireIdx = correctSel === "random" ? -1 : parseInt(correctSel);
+  if(correctWireIdx >= wireCount) correctWireIdx = -1;
+  if(correctWireIdx === -1) correctWireIdx = Math.floor(Math.random()*wireCount);
+  roomRef.child("bomb").set({ seconds, wireCount, correctWireIdx, message, id: Date.now() + Math.random(), outcome: null });
   document.getElementById("bomb-outcome-status").textContent = "Armed — waiting...";
   document.getElementById("bomb-outcome-status").style.color = "#888";
-  addHistory(`<span style="color:#aaa;">💣 Sent countdown bomb</span> (${seconds}s)`);
+  addHistory(`<span style="color:#aaa;">💣 Sent countdown bomb</span> (${seconds}s, ${wireCount} wires)`);
 });
 if(roomRef) roomRef.child("bomb/outcome").on("value", (snap) => {
   const outcome = snap.val();
   const el = document.getElementById("bomb-outcome-status");
   if(outcome === "defused"){ el.textContent = "They defused it ✅"; el.style.color = "#8bc34a"; }
   if(outcome === "exploded"){ el.textContent = "It exploded on them 💥"; el.style.color = "#ff8a80"; }
+});
+
+// ---------- DARE CARD ----------
+function sendDare(text, seconds){
+  if(!roomRef || !text) return;
+  roomRef.child("dare").set({ text, seconds: seconds || 0, id: Date.now() + Math.random(), outcome: null });
+  document.getElementById("dare-outcome-status").textContent = "Sent — waiting...";
+  document.getElementById("dare-outcome-status").style.color = "#888";
+  addHistory(`<span style="color:#aaa;">🎭 Sent dare:</span> "${text}"`);
+}
+document.querySelectorAll(".dare-preset").forEach(btn => {
+  btn.addEventListener("click", () => sendDare(btn.dataset.text, 15));
+});
+document.getElementById("dare-send").addEventListener("click", () => {
+  const text = document.getElementById("dare-text-input").value.trim();
+  const seconds = parseInt(document.getElementById("dare-seconds-input").value) || 0;
+  if(!text) return;
+  sendDare(text, seconds);
+  document.getElementById("dare-text-input").value = "";
+});
+if(roomRef) roomRef.child("dare/outcome").on("value", (snap) => {
+  const outcome = snap.val();
+  const el = document.getElementById("dare-outcome-status");
+  if(outcome === "done"){ el.textContent = "They completed it ✅"; el.style.color = "#8bc34a"; }
+  if(outcome === "timeout"){ el.textContent = "Time ran out on them ⏱️"; el.style.color = "#ff8a80"; }
+});
+
+// ---------- TRUTH CARD ----------
+function sendTruth(text){
+  if(!roomRef || !text) return;
+  roomRef.child("truth").set({ text, id: Date.now() + Math.random(), outcome: null });
+  document.getElementById("truth-answer-display").style.display = "none";
+  addHistory(`<span style="color:#aaa;">💬 Sent truth:</span> "${text}"`);
+}
+document.querySelectorAll(".truth-preset").forEach(btn => {
+  btn.addEventListener("click", () => sendTruth(btn.dataset.text));
+});
+document.getElementById("truth-send").addEventListener("click", () => {
+  const text = document.getElementById("truth-text-input").value.trim();
+  if(!text) return;
+  sendTruth(text);
+  document.getElementById("truth-text-input").value = "";
+});
+if(roomRef) roomRef.child("truth/outcome").on("value", (snap) => {
+  const answer = snap.val();
+  const el = document.getElementById("truth-answer-display");
+  if(answer){
+    el.style.display = "block";
+    el.textContent = `Their answer: "${answer}"`;
+    addHistory(`<span style="color:#8ab4f8;">Truth answer:</span> "${answer}"`);
+  }
+});
+
+// ---------- FAKE CALL ----------
+document.getElementById("call-send").addEventListener("click", () => {
+  if(!roomRef) return;
+  const name = document.getElementById("call-name-input").value.trim() || "Unknown";
+  roomRef.child("call").set({ name, id: Date.now() + Math.random(), outcome: null });
+  document.getElementById("call-outcome-status").textContent = "Ringing...";
+  document.getElementById("call-outcome-status").style.color = "#888";
+  addHistory(`<span style="color:#aaa;">📞 Sent fake call from:</span> "${name}"`);
+});
+if(roomRef) roomRef.child("call/outcome").on("value", (snap) => {
+  const outcome = snap.val();
+  const el = document.getElementById("call-outcome-status");
+  if(outcome === "accepted"){ el.textContent = "They accepted 📞"; el.style.color = "#8bc34a"; }
+  if(outcome === "declined"){ el.textContent = "They declined ✕"; el.style.color = "#ff8a80"; }
+});
+
+// ---------- SCREEN GLITCH ----------
+document.getElementById("glitch-send").addEventListener("click", () => {
+  if(!roomRef) return;
+  const text = document.getElementById("glitch-text-input").value.trim() || "SYSTEM ERROR\nRecovering data...";
+  const seconds = parseInt(document.getElementById("glitch-seconds-input").value) || 4;
+  roomRef.child("glitch").set({ text, seconds, id: Date.now() + Math.random() });
+  addHistory(`<span style="color:#aaa;">💻 Triggered screen glitch</span> (${seconds}s)`);
+});
+
+// ---------- SPIN THE WHEEL ----------
+function getWheelOptions(){
+  return document.getElementById("wheel-options-input").value.split(",").map(s => s.trim()).filter(Boolean);
+}
+document.getElementById("wheel-options-input").addEventListener("input", () => {
+  const opts = getWheelOptions();
+  const sel = document.getElementById("wheel-rig-select");
+  sel.innerHTML = `<option value="random">Random result</option>` +
+    opts.map((o,i) => `<option value="${i}">Rig: ${o}</option>`).join("");
+});
+
+let wheelSpinning = false;
+document.getElementById("wheel-spin-btn").addEventListener("click", () => {
+  if(wheelSpinning || !roomRef) return;
+  const opts = getWheelOptions();
+  if(opts.length === 0) return;
+  const rigSel = document.getElementById("wheel-rig-select").value;
+  const finalIdx = rigSel === "random" ? Math.floor(Math.random()*opts.length) : parseInt(rigSel);
+
+  wheelSpinning = true;
+  const display = document.getElementById("wheel-spin-display");
+  let ticks = 0;
+  const totalTicks = 18;
+  const spinInterval = setInterval(() => {
+    display.textContent = opts[Math.floor(Math.random()*opts.length)];
+    ticks++;
+    if(ticks >= totalTicks){
+      clearInterval(spinInterval);
+      const result = opts[finalIdx] || opts[0];
+      display.textContent = "🎯 " + result;
+      wheelSpinning = false;
+      roomRef.child("wheel").set({ result, id: Date.now() + Math.random() });
+      addHistory(`<span style="color:#f9a825;">🎡 Wheel landed on:</span> "${result}"`);
+    }
+  }, 120);
+});
+
+// ---------- SEQUENCE BUILDER ----------
+let sequenceSteps = [];
+let sequenceRunning = false;
+let sequenceTimeoutHandle = null;
+
+const seqTypeLabels = {
+  notif: "🔔 Notification", dare: "🎭 Dare", truth: "💬 Truth",
+  bomb: "💣 Bomb", call: "📞 Call", glitch: "💻 Glitch", question: "❓ Question"
+};
+
+function renderSeqList(){
+  const box = document.getElementById("seq-list");
+  if(sequenceSteps.length === 0){
+    box.innerHTML = `<em style="color:#666;font-size:13px;">No steps yet — add some above.</em>`;
+    return;
+  }
+  box.innerHTML = sequenceSteps.map((step, i) => `
+    <div style="display:flex;align-items:center;gap:10px;background:#0d0d0d;border:1px solid #222;
+      border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:13px;">
+      <span style="color:#666;">${i+1}.</span>
+      <span style="flex:1;">${seqTypeLabels[step.type]} — "${step.text}" <span style="color:#666;">(wait ${step.delay}s)</span></span>
+      <button class="ghost seq-remove" data-idx="${i}" style="padding:4px 10px;font-size:12px;">✕</button>
+    </div>
+  `).join("");
+  document.querySelectorAll(".seq-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      sequenceSteps.splice(parseInt(btn.dataset.idx), 1);
+      renderSeqList();
+    });
+  });
+}
+renderSeqList();
+
+document.getElementById("seq-add-step").addEventListener("click", () => {
+  const type = document.getElementById("seq-step-type").value;
+  const text = document.getElementById("seq-step-text").value.trim();
+  const delay = parseInt(document.getElementById("seq-step-delay").value) || 0;
+  if(!text) return;
+  sequenceSteps.push({ type, text, delay });
+  document.getElementById("seq-step-text").value = "";
+  renderSeqList();
+});
+
+document.getElementById("seq-clear").addEventListener("click", () => {
+  sequenceSteps = [];
+  renderSeqList();
+});
+
+function runSeqStep(step){
+  if(step.type === "notif") sendNotif("🔔", "Notification", step.text);
+  if(step.type === "dare") sendDare(step.text, 20);
+  if(step.type === "truth") sendTruth(step.text);
+  if(step.type === "call") roomRef && roomRef.child("call").set({ name: step.text, id: Date.now()+Math.random(), outcome: null });
+  if(step.type === "glitch") roomRef && roomRef.child("glitch").set({ text: step.text, seconds: 4, id: Date.now()+Math.random() });
+  if(step.type === "bomb"){
+    const seconds = parseInt(step.text) || 20;
+    roomRef && roomRef.child("bomb").set({ seconds, wireCount: 4, correctWireIdx: Math.floor(Math.random()*4),
+      message: "Cut the correct wire!", id: Date.now()+Math.random(), outcome: null });
+  }
+  if(step.type === "question" && roomRef){
+    roomRef.update({ question: step.text, questionMode: "yesno", yesLabel: "Yes", noLabel: "No",
+      status: "asking", answer: "", playerAnswer: "", answerFeedback: null, verdictMode: false });
+  }
+  addHistory(`<span style="color:#ba68c8;">🎬 Sequence step:</span> ${seqTypeLabels[step.type]} — "${step.text}"`);
+}
+
+function playSequence(idx){
+  if(!sequenceRunning || idx >= sequenceSteps.length){
+    sequenceRunning = false;
+    document.getElementById("seq-status").textContent = idx >= sequenceSteps.length ? "Sequence finished." : "Stopped.";
+    return;
+  }
+  const step = sequenceSteps[idx];
+  document.getElementById("seq-status").textContent = `Step ${idx+1} of ${sequenceSteps.length} in ${step.delay}s...`;
+  sequenceTimeoutHandle = setTimeout(() => {
+    if(!sequenceRunning) return;
+    runSeqStep(step);
+    document.getElementById("seq-status").textContent = `Playing step ${idx+1} of ${sequenceSteps.length}`;
+    playSequence(idx+1);
+  }, step.delay * 1000);
+}
+
+document.getElementById("seq-play").addEventListener("click", () => {
+  if(sequenceSteps.length === 0) return;
+  sequenceRunning = true;
+  playSequence(0);
+});
+document.getElementById("seq-stop").addEventListener("click", () => {
+  sequenceRunning = false;
+  if(sequenceTimeoutHandle) clearTimeout(sequenceTimeoutHandle);
+  document.getElementById("seq-status").textContent = "Stopped.";
+});
+
+// ---------- EXPORT HISTORY ----------
+document.getElementById("export-history").addEventListener("click", () => {
+  const plainText = historyEntries.map(l => l.replace(/<[^>]+>/g, "")).join("\n");
+  const blob = new Blob([`MindReader session — room ${roomId}\n${new Date().toLocaleString()}\n\n${plainText}`], {type:"text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `mindreader-session-${roomId}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
 });
 
 // ---------- PANIC / RECAP ----------
