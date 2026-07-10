@@ -39,6 +39,12 @@
   .tab-btn.active{background:var(--accent);color:#000;border-color:var(--accent);}
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
+
+  .stat-tile{background:#0d0d0d;border:1px solid #262626;border-radius:10px;padding:14px 12px;
+    text-align:center;}
+  .stat-tile .stat-icon{font-size:22px;margin-bottom:6px;}
+  .stat-tile .stat-num{font-size:26px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;}
+  .stat-tile .stat-label{font-size:11px;color:#888;margin-top:4px;line-height:1.3;}
 </style>
 </head>
 <body>
@@ -51,6 +57,9 @@
   <button class="tab-btn" data-tab="games">Games</button>
   <button class="tab-btn" data-tab="fx">FX</button>
   <button class="tab-btn" data-tab="sequence">Sequence</button>
+  <button class="tab-btn" data-tab="escape">Escape Room</button>
+  <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
+  <button class="tab-btn" data-tab="stats">Stats</button>
   <button class="tab-btn" data-tab="test">Test</button>
   <button class="tab-btn" data-tab="history">History</button>
 </div>
@@ -75,6 +84,10 @@
     <input type="text" id="notif-title" placeholder="Custom title" style="flex:1;">
     <input type="text" id="notif-msg" placeholder="Custom message" style="flex:2;">
     <button class="primary" id="notif-send" style="flex-shrink:0;">Send</button>
+  </div>
+  <div class="row" style="margin-top:12px;">
+    <button class="no" id="buzz-send">📳 Buzz their phone</button>
+    <small class="hint" style="margin:0;align-self:center;">Instant vibration + screen flash — works best on mobile.</small>
   </div>
 </div>
 
@@ -175,6 +188,21 @@
     </select>
   </div>
 </div>
+
+<div class="card">
+  <label>🎙️ Voice message (record a short clip, sent straight to their screen)</label>
+  <small class="hint" style="margin-bottom:12px;">Uses your mic (needs permission once). Keep clips
+  under ~15 seconds — this rides on the free Firebase database, no paid storage needed.</small>
+  <div class="row" style="align-items:center;">
+    <button class="no" id="voice-record-btn">🔴 Start recording</button>
+    <span id="voice-record-status" style="font-size:13px;color:#888;">Not recording</span>
+  </div>
+  <div id="voice-preview-row" style="display:none;margin-top:12px;">
+    <audio id="voice-preview-audio" controls style="width:100%;margin-bottom:10px;"></audio>
+    <button class="primary" id="voice-send-btn">📤 Send to their screen</button>
+    <button class="ghost" id="voice-discard-btn">Discard</button>
+  </div>
+</div>
 </div>
 
 <!-- ============ SEQUENCE TAB ============ -->
@@ -208,6 +236,74 @@
     <button class="ghost" id="seq-clear">Clear all</button>
   </div>
   <div id="seq-status" style="font-size:13px;color:#888;margin-top:10px;"></div>
+</div>
+</div>
+
+<!-- ============ ESCAPE ROOM TAB ============ -->
+<div class="tab-panel" id="tab-escape">
+<div class="card">
+  <label>🔐 Escape Room — chain mini-games into a timed puzzle they must beat</label>
+  <small class="hint" style="margin-bottom:14px;">Build a stage order below, set a total time limit,
+  then start. Their screen shows a persistent countdown + stage progress. Watch their live progress
+  for each stage on the Games tab, then come back here to advance them or trap them. Miss the clock
+  and they're automatically trapped.</small>
+
+  <div class="row" style="margin-bottom:12px;">
+    <select id="escape-stage-type" style="flex:1;">
+      <option value="tictactoe">Tic-Tac-Toe</option>
+      <option value="whackamole">Whack-a-Mole</option>
+      <option value="rps">Rock Paper Scissors</option>
+      <option value="bomb">Cut the wire</option>
+    </select>
+    <input type="text" id="escape-stage-label" placeholder="Label shown to them (e.g. 'The First Lock')" style="flex:2;">
+  </div>
+  <button class="ghost" id="escape-add-stage">+ Add stage</button>
+  <div id="escape-stage-list" style="margin-top:14px;margin-bottom:16px;"></div>
+
+  <label style="font-size:12px;">Total time limit (minutes)</label>
+  <input type="text" id="escape-time-limit" value="10" style="max-width:120px;">
+  <button class="primary" id="escape-start-btn">🔐 Start Escape Room</button>
+
+  <div id="escape-live-status" style="margin-top:20px;padding-top:16px;border-top:1px solid #262626;display:none;">
+    <div id="escape-status-text" style="font-size:15px;color:#fff;margin-bottom:6px;">—</div>
+    <div id="escape-status-timer" style="font-size:20px;font-weight:800;color:#ff8a65;margin-bottom:14px;">--:--</div>
+    <div class="row">
+      <button class="yes" id="escape-advance-btn">✅ Stage cleared → Next</button>
+      <button class="no" id="escape-trap-btn">🔒 Trap them now</button>
+    </div>
+  </div>
+
+  <div id="escape-save-row" style="margin-top:16px;display:none;padding-top:16px;border-top:1px solid #262626;">
+    <label style="font-size:12px;">🏆 They escaped! Save this run to the leaderboard?</label>
+    <div class="row">
+      <input type="text" id="escape-save-name" placeholder="Team / player name" style="flex:2;">
+      <button class="primary" id="escape-save-btn" style="flex-shrink:0;">Save score</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ LEADERBOARD TAB ============ -->
+<div class="tab-panel" id="tab-leaderboard">
+<div class="card">
+  <label>🏆 Escape Room Leaderboard <span style="color:#666;font-weight:400;">(shared — visible to anyone using this app)</span></label>
+  <button class="ghost" id="leaderboard-refresh" style="margin-bottom:14px;">🔄 Refresh</button>
+  <div id="leaderboard-list" style="font-size:14px;color:#ccc;"></div>
+</div>
+</div>
+
+<!-- ============ STATS TAB ============ -->
+<div class="tab-panel" id="tab-stats">
+<div class="card">
+  <label>📊 This session <span style="color:#666;font-weight:400;">(resets when you reload this page)</span></label>
+  <div id="stats-grid-session" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:10px;margin-top:12px;"></div>
+</div>
+<div class="card">
+  <label>🌍 All-time <span style="color:#666;font-weight:400;">(shared across every session ever run on this Firebase project)</span></label>
+  <button class="ghost" id="stats-refresh" style="margin-bottom:12px;">🔄 Refresh</button>
+  <div id="stats-grid-alltime" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:10px;"></div>
 </div>
 </div>
 
@@ -724,10 +820,113 @@ if(roomRef){
 
 const historyLog = document.getElementById("history-log");
 let historyEntries = [];
+
+// ---------- STATS (Minecraft-style counters, auto-derived from history lines) ----------
+const STAT_DEFS = {
+  totalEvents:        { icon: "📋", label: "Total actions" },
+  questionsAsked:      { icon: "❓", label: "Questions asked" },
+  answersRevealed:      { icon: "🎭", label: "Answers revealed" },
+  riggedActions:      { icon: "😏", label: "Things rigged" },
+  tttGamesStarted:      { icon: "⭕", label: "Tic-Tac-Toe played" },
+  snakeGamesStarted:      { icon: "🐍", label: "Snake played" },
+  rpsGamesStarted:      { icon: "✂️", label: "RPS played" },
+  reactionGamesStarted:      { icon: "⚡", label: "Reaction tests" },
+  wamGamesStarted:      { icon: "🔨", label: "Whack-a-Mole played" },
+  quizGamesStarted:      { icon: "🧠", label: "Quizzes played" },
+  notificationsSent:      { icon: "🔔", label: "Fake notifications" },
+  buzzesSent:      { icon: "📳", label: "Phone buzzes" },
+  bombsSent:      { icon: "💣", label: "Bombs sent" },
+  daresSent:      { icon: "🎭", label: "Dares sent" },
+  truthsSent:      { icon: "💬", label: "Truths sent" },
+  callsSent:      { icon: "📞", label: "Fake calls" },
+  glitchesSent:      { icon: "💻", label: "Screen glitches" },
+  wheelSpins:      { icon: "🎡", label: "Wheel spins" },
+  voiceMessagesSent:      { icon: "🎙️", label: "Voice messages" },
+  sequenceStepsPlayed:      { icon: "🎬", label: "Sequence steps" },
+  escapeRoomsStarted:      { icon: "🔐", label: "Escape rooms started" },
+  escapeRoomsWon:      { icon: "🔓", label: "Escapes won" },
+  escapeRoomsLost:      { icon: "🔒", label: "Escapes failed" },
+  leaderboardSaves:      { icon: "🏆", label: "Scores saved" },
+  snapshotsTaken:      { icon: "📸", label: "Snapshots taken" },
+  panicPresses:      { icon: "🚨", label: "Panic presses" },
+  recapEndings:      { icon: "🏁", label: "Sessions recapped" }
+};
+const sessionStats = {};
+function bumpStat(key, amount){
+  amount = amount || 1;
+  sessionStats[key] = (sessionStats[key]||0) + amount;
+  if(db){
+    try{
+      db.ref("globalStats/"+key).set(firebase.database.ServerValue.increment(amount));
+    }catch(e){ /* ignore if increment unsupported */ }
+  }
+  renderStatsGrid("stats-grid-session", sessionStats);
+}
+const STAT_KEYWORD_RULES = [
+  [/You asked:/, "questionsAsked"],
+  [/You revealed:/, "answersRevealed"],
+  [/Rigged:/, "riggedActions"],
+  [/Started Tic-Tac-Toe/, "tttGamesStarted"],
+  [/Started Snake/, "snakeGamesStarted"],
+  [/Started Rock Paper Scissors/, "rpsGamesStarted"],
+  [/Started Reaction Test/, "reactionGamesStarted"],
+  [/Started Whack-a-Mole/, "wamGamesStarted"],
+  [/Started Quiz/, "quizGamesStarted"],
+  [/Sent fake notification/, "notificationsSent"],
+  [/Buzzed their phone/, "buzzesSent"],
+  [/Sent countdown bomb/, "bombsSent"],
+  [/Sent dare:/, "daresSent"],
+  [/Sent truth:/, "truthsSent"],
+  [/Sent fake call/, "callsSent"],
+  [/Triggered screen glitch/, "glitchesSent"],
+  [/Wheel landed on/, "wheelSpins"],
+  [/Sent a voice message/, "voiceMessagesSent"],
+  [/Sequence step:/, "sequenceStepsPlayed"],
+  [/Started Escape Room/, "escapeRoomsStarted"],
+  [/they escaped!/, "escapeRoomsWon"],
+  [/time ran out — trapped/, "escapeRoomsLost"],
+  [/Trapped them manually/, "escapeRoomsLost"],
+  [/Saved score:/, "leaderboardSaves"],
+  [/Took a snapshot/, "snapshotsTaken"],
+  [/Panic button pressed/, "panicPresses"],
+  [/Ended session with recap/, "recapEndings"]
+];
+function renderStatsGrid(elId, statsObj){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  const keys = Object.keys(STAT_DEFS).filter(k => statsObj[k] > 0);
+  if(keys.length === 0){
+    el.innerHTML = `<em style="color:#666;font-size:13px;grid-column:1/-1;">No stats yet.</em>`;
+    return;
+  }
+  el.innerHTML = keys.map(k => `
+    <div class="stat-tile">
+      <div class="stat-icon">${STAT_DEFS[k].icon}</div>
+      <div class="stat-num">${statsObj[k]}</div>
+      <div class="stat-label">${STAT_DEFS[k].label}</div>
+    </div>
+  `).join("");
+}
+function loadAllTimeStats(){
+  if(!db) return;
+  document.getElementById("stats-grid-alltime").innerHTML = `<em style="color:#666;grid-column:1/-1;">Loading...</em>`;
+  db.ref("globalStats").once("value").then(snap => {
+    renderStatsGrid("stats-grid-alltime", snap.val() || {});
+  }).catch(err => {
+    document.getElementById("stats-grid-alltime").innerHTML =
+      `<span style="color:#ff8a80;grid-column:1/-1;">Couldn't load: ${err.message}</span>`;
+  });
+}
+document.getElementById("stats-refresh").addEventListener("click", loadAllTimeStats);
+document.querySelector('[data-tab="stats"]').addEventListener("click", loadAllTimeStats);
+renderStatsGrid("stats-grid-session", sessionStats);
+
 function addHistory(line){
   historyEntries.push(line);
   historyLog.innerHTML = historyEntries.map(l => `<div style="margin-bottom:6px;">${l}</div>`).join("");
   historyLog.scrollTop = historyLog.scrollHeight;
+  bumpStat("totalEvents");
+  STAT_KEYWORD_RULES.forEach(([regex, key]) => { if(regex.test(line)) bumpStat(key); });
 }
 
 let lastLoggedAnswer = null;
@@ -1239,6 +1438,12 @@ document.getElementById("notif-send").addEventListener("click", () => {
   document.getElementById("notif-msg").value = "";
 });
 
+document.getElementById("buzz-send").addEventListener("click", () => {
+  if(!roomRef) return;
+  roomRef.child("buzz").set({ pattern: [200,100,200,100,400], durationMs: 1200, id: Date.now() + Math.random() });
+  addHistory(`<span style="color:#aaa;">📳 Buzzed their phone</span>`);
+});
+
 // ---------- COUNTDOWN BOMB ----------
 document.getElementById("bomb-send").addEventListener("click", () => {
   if(!roomRef) return;
@@ -1375,6 +1580,85 @@ document.getElementById("wheel-spin-btn").addEventListener("click", () => {
   }, 120);
 });
 
+// ---------- VOICE MESSAGE ----------
+let voiceMediaRecorder = null;
+let voiceChunks = [];
+let voiceBlob = null;
+let voiceStream = null;
+
+async function ensureVoiceMic(){
+  if(voiceStream) return voiceStream;
+  voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  return voiceStream;
+}
+
+function startVoiceRecording(){
+  ensureVoiceMic().then(stream => {
+    voiceChunks = [];
+    voiceMediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+    voiceMediaRecorder.ondataavailable = e => { if(e.data.size > 0) voiceChunks.push(e.data); };
+    voiceMediaRecorder.onstop = () => {
+      voiceBlob = new Blob(voiceChunks, { type: "audio/webm" });
+      const url = URL.createObjectURL(voiceBlob);
+      document.getElementById("voice-preview-audio").src = url;
+      document.getElementById("voice-preview-row").style.display = "block";
+      document.getElementById("voice-record-status").textContent =
+        `Recorded ${(voiceBlob.size/1024).toFixed(0)}KB`;
+    };
+    voiceMediaRecorder.start();
+    document.getElementById("voice-record-status").textContent = "🔴 Recording...";
+  }).catch(err => {
+    document.getElementById("voice-record-status").textContent = "Mic permission denied";
+  });
+}
+function stopVoiceRecording(){
+  if(voiceMediaRecorder && voiceMediaRecorder.state === "recording"){
+    voiceMediaRecorder.stop();
+  }
+}
+
+const voiceBtn = document.getElementById("voice-record-btn");
+let voiceIsRecording = false;
+voiceBtn.addEventListener("click", () => {
+  if(!voiceIsRecording){
+    voiceIsRecording = true;
+    voiceBtn.textContent = "⏹ Stop recording";
+    startVoiceRecording();
+  }else{
+    voiceIsRecording = false;
+    voiceBtn.textContent = "🔴 Start recording";
+    stopVoiceRecording();
+  }
+});
+
+document.getElementById("voice-discard-btn").addEventListener("click", () => {
+  voiceBlob = null;
+  document.getElementById("voice-preview-row").style.display = "none";
+  document.getElementById("voice-record-status").textContent = "Not recording";
+  voiceIsRecording = false;
+  voiceBtn.textContent = "🔴 Start recording";
+});
+
+document.getElementById("voice-send-btn").addEventListener("click", () => {
+  if(!voiceBlob || !roomRef) return;
+  if(voiceBlob.size > 700000){
+    document.getElementById("voice-record-status").textContent =
+      "Clip too long/large — keep it shorter and try again.";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    roomRef.child("voice").set({ dataUrl: reader.result, id: Date.now() + Math.random() });
+    document.getElementById("voice-preview-row").style.display = "none";
+    document.getElementById("voice-record-status").textContent = "Sent!";
+    addHistory(`<span style="color:#8ab4f8;">🎙️ Sent a voice message</span> (${(voiceBlob.size/1024).toFixed(0)}KB)`);
+    voiceBlob = null;
+    voiceIsRecording = false;
+    voiceBtn.textContent = "🔴 Start recording";
+  };
+  reader.readAsDataURL(voiceBlob);
+});
+
 // ---------- SEQUENCE BUILDER ----------
 let sequenceSteps = [];
 let sequenceRunning = false;
@@ -1467,6 +1751,182 @@ document.getElementById("seq-stop").addEventListener("click", () => {
   if(sequenceTimeoutHandle) clearTimeout(sequenceTimeoutHandle);
   document.getElementById("seq-status").textContent = "Stopped.";
 });
+
+// ---------- ESCAPE ROOM ----------
+let escapeStages = [];
+let escapeCheckHandle = null;
+
+const escapeTypeLabels = {
+  tictactoe: "Tic-Tac-Toe", whackamole: "Whack-a-Mole", rps: "Rock Paper Scissors", bomb: "Cut the wire"
+};
+
+function renderEscapeStageList(){
+  const box = document.getElementById("escape-stage-list");
+  if(escapeStages.length === 0){
+    box.innerHTML = `<em style="color:#666;font-size:13px;">No stages yet — add some above.</em>`;
+    return;
+  }
+  box.innerHTML = escapeStages.map((s, i) => `
+    <div style="display:flex;align-items:center;gap:10px;background:#0d0d0d;border:1px solid #222;
+      border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:13px;">
+      <span style="color:#666;">${i+1}.</span>
+      <span style="flex:1;">${escapeTypeLabels[s.type]} — "${s.label}"</span>
+      <button class="ghost escape-remove-stage" data-idx="${i}" style="padding:4px 10px;font-size:12px;">✕</button>
+    </div>
+  `).join("");
+  document.querySelectorAll(".escape-remove-stage").forEach(btn => {
+    btn.addEventListener("click", () => {
+      escapeStages.splice(parseInt(btn.dataset.idx), 1);
+      renderEscapeStageList();
+    });
+  });
+}
+renderEscapeStageList();
+
+document.getElementById("escape-add-stage").addEventListener("click", () => {
+  const type = document.getElementById("escape-stage-type").value;
+  const label = document.getElementById("escape-stage-label").value.trim() || escapeTypeLabels[type];
+  escapeStages.push({ type, label });
+  document.getElementById("escape-stage-label").value = "";
+  renderEscapeStageList();
+});
+
+function startEscapeStageGame(type){
+  if(!roomRef) return;
+  if(type === "tictactoe"){
+    roomRef.child("game").set({
+      type: "tictactoe", config: { size: 3, playerSymbol: "X", adminSymbol: "O" },
+      state: { board: Array(9).fill(""), turn: "player", winner: null }
+    });
+  }else if(type === "whackamole"){
+    roomRef.child("game").set({
+      type: "whackamole", config: { gridSize: 3, spawnRateMs: 900 }, state: { score: 0 }, cmd: null
+    });
+  }else if(type === "rps"){
+    roomRef.child("game").set({
+      type: "rps", config: {},
+      state: { playerChoice: null, adminChoice: null, result: null, playerScore: 0, adminScore: 0 }
+    });
+  }else if(type === "bomb"){
+    roomRef.child("bomb").set({
+      seconds: 25, wireCount: 4, correctWireIdx: Math.floor(Math.random()*4),
+      message: "Cut the correct wire to clear this stage.", id: Date.now()+Math.random(), outcome: null
+    });
+  }
+  if(type !== "bomb") roomRef.update({ status: "game" });
+}
+
+document.getElementById("escape-start-btn").addEventListener("click", () => {
+  if(!roomRef || escapeStages.length === 0) return;
+  const minutes = parseFloat(document.getElementById("escape-time-limit").value) || 10;
+  const deadline = Date.now() + minutes*60000;
+  window._escapeTotalSeconds = Math.round(minutes*60);
+  roomRef.child("escape").set({
+    status: "active", stages: escapeStages, currentIndex: 0, deadline,
+    id: Date.now() + Math.random()
+  });
+  startEscapeStageGame(escapeStages[0].type);
+  document.getElementById("escape-live-status").style.display = "block";
+  document.getElementById("escape-save-row").style.display = "none";
+  addHistory(`<span style="color:#ff8a65;">🔐 Started Escape Room</span> (${escapeStages.length} stages, ${minutes}min)`);
+
+  if(escapeCheckHandle) clearInterval(escapeCheckHandle);
+  escapeCheckHandle = setInterval(() => {
+    roomRef.child("escape").once("value", (snap) => {
+      const escape = snap.val();
+      if(!escape || escape.status !== "active"){
+        clearInterval(escapeCheckHandle);
+        if(escape){
+          document.getElementById("escape-status-text").textContent =
+            escape.status === "won" ? "🔓 They escaped!" : "🔒 They got trapped.";
+          if(escape.status === "lost"){
+            addHistory(`<span style="color:#ff8a80;">🔒 Escape Room ended:</span> time ran out — trapped`);
+          }
+          if(escape.status === "won"){
+            const remainingAtWin = Math.max(0, Math.round((escape.deadline - Date.now())/1000));
+            window._escapeElapsedSeconds = Math.max(1, (window._escapeTotalSeconds||600) - remainingAtWin);
+            window._escapeStageCount = (escape.stages||[]).length;
+            document.getElementById("escape-save-row").style.display = "block";
+          }
+        }
+        return;
+      }
+      const stages = escape.stages || [];
+      const idx = escape.currentIndex || 0;
+      document.getElementById("escape-status-text").textContent =
+        `Stage ${idx+1} of ${stages.length}: ${stages[idx] ? stages[idx].label : ""}`;
+      const remaining = Math.max(0, Math.round((escape.deadline - Date.now())/1000));
+      const m = Math.floor(remaining/60), s = remaining%60;
+      document.getElementById("escape-status-timer").textContent = `${m}:${s.toString().padStart(2,"0")}`;
+    });
+  }, 1000);
+});
+
+document.getElementById("escape-advance-btn").addEventListener("click", () => {
+  if(!roomRef) return;
+  roomRef.child("escape").once("value", (snap) => {
+    const escape = snap.val();
+    if(!escape || escape.status !== "active") return;
+    const stages = escape.stages || [];
+    const nextIdx = (escape.currentIndex || 0) + 1;
+    if(nextIdx >= stages.length){
+      roomRef.child("escape").update({ status: "won" });
+      addHistory(`<span style="color:#4caf50;">🔓 Escape Room:</span> final stage cleared — they escaped!`);
+    }else{
+      roomRef.child("escape").update({ currentIndex: nextIdx });
+      startEscapeStageGame(stages[nextIdx].type);
+      addHistory(`<span style="color:#aaa;">🔐 Escape Room:</span> advanced to stage ${nextIdx+1}`);
+    }
+  });
+});
+
+document.getElementById("escape-trap-btn").addEventListener("click", () => {
+  if(!roomRef) return;
+  roomRef.child("escape").update({ status: "lost" });
+  addHistory(`<span style="color:#ff8a80;">🔒 Trapped them manually</span> in the Escape Room`);
+});
+
+document.getElementById("escape-save-btn").addEventListener("click", () => {
+  if(!db) return;
+  const name = document.getElementById("escape-save-name").value.trim() || "Anonymous";
+  const elapsedSeconds = window._escapeElapsedSeconds || 0;
+  const stageCount = window._escapeStageCount || 0;
+  db.ref("leaderboard").push({ name, elapsedSeconds, stageCount, ts: Date.now() });
+  document.getElementById("escape-save-row").style.display = "none";
+  addHistory(`<span style="color:#4caf50;">🏆 Saved score:</span> ${name} — ${elapsedSeconds}s`);
+});
+
+function formatLbTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return `${m}:${s.toString().padStart(2,"0")}`;
+}
+function loadLeaderboard(){
+  if(!db) return;
+  const listEl = document.getElementById("leaderboard-list");
+  listEl.innerHTML = `<em style="color:#666;">Loading...</em>`;
+  db.ref("leaderboard").orderByChild("elapsedSeconds").limitToFirst(15).once("value")
+    .then(snap => {
+      const entries = [];
+      snap.forEach(child => entries.push(child.val()));
+      if(entries.length === 0){
+        listEl.innerHTML = `<em style="color:#666;">No completed runs yet — be the first!</em>`;
+        return;
+      }
+      listEl.innerHTML = entries.map((e,i) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;
+          border-bottom:1px solid #1c1c1c;">
+          <span style="width:26px;color:${i===0?'#ffd54f':i===1?'#b0bec5':i===2?'#d7854a':'#666'};
+            font-weight:800;">${i+1}</span>
+          <span style="flex:1;">${e.name}</span>
+          <span style="color:#888;font-size:12px;">${e.stageCount} stages</span>
+          <span style="font-weight:700;color:#4caf50;">${formatLbTime(e.elapsedSeconds)}</span>
+        </div>
+      `).join("");
+    })
+    .catch(err => { listEl.innerHTML = `<span style="color:#ff8a80;">Couldn't load: ${err.message}</span>`; });
+}
+document.getElementById("leaderboard-refresh").addEventListener("click", loadLeaderboard);
+document.querySelector('[data-tab="leaderboard"]').addEventListener("click", loadLeaderboard);
 
 // ---------- EXPORT HISTORY ----------
 document.getElementById("export-history").addEventListener("click", () => {
